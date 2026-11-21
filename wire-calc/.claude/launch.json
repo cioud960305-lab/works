@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "static-site",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "const h=require('http'),f=require('fs'),p=require('path');const T={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json'};h.createServer((q,s)=>{let u=decodeURIComponent(q.url.split('?')[0]);if(u==='/')u='/wire-calc.html';const fp=p.join(process.cwd(),u);if(!fp.startsWith(process.cwd())){s.writeHead(403);return s.end()}f.readFile(fp,(e,d)=>{if(e){s.writeHead(404);return s.end('Not found')}s.writeHead(200,{'Content-Type':T[p.extname(fp)]||'application/octet-stream'});s.end(d)})}).listen(3000,()=>console.log('http://localhost:3000'))"
+      ],
+      "port": 3000
+    }
+  ]
+}

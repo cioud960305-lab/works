@@ -1,0 +1,1008 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>전선 굵기 산정기</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root{
+  --bg:#f4f6fa;--card:#fff;--text:#1b2433;--sub:#667085;--line:#e3e7ee;
+  --c1:#2563eb;--c2:#16a34a;--c3:#d97706;--c4:#dc2626;--c5:#7c3aed;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#10151f;--card:#18202e;--text:#e8edf6;--sub:#93a0b5;--line:#2a3547;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#10151f;--card:#18202e;--text:#e8edf6;--sub:#93a0b5;--line:#2a3547;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Malgun Gothic",system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:calc(100vw - 32px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.9rem;z-index:50;box-shadow:0 6px 18px #0004}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+h1{font-size:1.5rem;margin:0 0 4px}
+.sub{color:var(--sub);font-size:.9rem;margin-bottom:18px}
+.pm{position:relative;flex:none}
+.pbtn{border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:8px 14px;font:inherit;cursor:pointer}
+.pbtn:hover{border-color:var(--c1)}
+.menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:190px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;z-index:5;box-shadow:0 6px 18px #0002}
+.menu.on{display:block}
+.menu button{display:block;width:100%;text-align:left;border:0;background:transparent;color:var(--text);font:inherit;padding:10px 14px;cursor:pointer}
+.menu button:hover{background:var(--bg)}
+.modes{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.mode{border:2px solid var(--line);background:var(--card);color:var(--text);border-radius:14px;padding:12px 8px;cursor:pointer;font:inherit;text-align:center;transition:.15s}
+.mode svg{display:block;margin:0 auto 6px}
+.mode b{display:block;font-size:1rem}
+.mode small{color:var(--sub)}
+.mode:hover{transform:translateY(-2px)}
+.mode.on{color:#fff;border-color:transparent}
+.mode.on small{color:#ffffffcc}
+.mode[data-m="0"].on{background:var(--c1)}
+.mode[data-m="1"].on{background:var(--c2)}
+.mode[data-m="2"].on{background:var(--c3)}
+.mode[data-m="3"].on{background:var(--c4)}
+.panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;border-top:6px solid var(--ac)}
+.panel.on{display:block}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;border-top:6px solid var(--ac);margin-top:20px}
+.sec h2{margin:0 0 4px;font-size:1.15rem}
+.sec .d{color:var(--sub);font-size:.85rem;margin-bottom:14px}
+.formula{background:var(--bg);border-radius:10px;padding:10px 14px;font-family:Consolas,monospace;font-size:.95rem;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+label{display:block;font-size:.85rem;color:var(--sub);margin-bottom:4px}
+.field{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);overflow:hidden}
+.field:focus-within{border-color:var(--ac)}
+.field input,.field select{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font:inherit;font-size:1.1rem;padding:10px 12px;outline:0}
+.field select option{background:var(--card);color:var(--text)}
+.field span{padding:0 12px;color:var(--sub);font-size:.9rem}
+.result{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.box{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.box .k{font-size:.8rem;color:var(--sub)}
+.box .v{font-size:1.5rem;font-weight:700}
+.box.main{background:var(--ac);border-color:var(--ac);color:#fff}
+.box.main .k,.box.main .n{color:#ffffffcc}
+.box .n{font-size:.8rem;color:var(--sub)}
+.ok{color:#16a34a}.ng{color:#dc2626}
+h3{margin:22px 0 8px;font-size:1rem}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:420px}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:center}
+th{background:var(--bg);color:var(--sub);font-weight:600}
+td.cur{background:var(--ac);color:#fff;font-weight:700}
+.sum{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.note{font-size:.8rem;color:var(--sub);margin-top:14px}
+.apply{margin-top:12px;border:0;background:var(--ac);color:#fff;font:inherit;border-radius:10px;padding:9px 16px;cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.85rem;color:var(--sub);margin-top:6px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px}
+svg.ch text{fill:var(--sub);font-size:11px}
+.pnav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.tg{flex:1;min-width:150px;border:2px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;padding:12px 14px;font:inherit;font-weight:700;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tg::after{content:"▾";transition:.2s}
+.tg[aria-expanded=true]{border-color:var(--c1);background:var(--c1);color:#fff}
+.tg[aria-expanded=true]::after{transform:rotate(180deg)}
+.tg.s{flex:none;min-width:0;padding:8px 14px;font-weight:600}
+.pg{display:none;margin-bottom:24px}
+.pg.on{display:block}
+.pgh{font-size:1.15rem;font-weight:700;margin:6px 0 4px}
+.bk .box .v{font-size:1.3rem}
+details.opt{margin-top:14px;border:1px dashed var(--line);border-radius:10px;padding:10px 14px}
+details.opt summary{cursor:pointer;color:var(--sub);font-size:.9rem}
+details.opt .grid{margin-top:12px}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.85rem;font-weight:700}
+.pill.ok{background:#16a34a22;color:#16a34a}.pill.ng{background:#dc262622;color:#dc2626}
+details.g{border:1px solid var(--line);border-radius:10px;background:var(--card);margin-bottom:8px}
+details.g summary{padding:10px 14px;cursor:pointer;font-weight:600}
+details.g .b{padding:0 14px 12px;font-size:.92rem}
+.fm{font-family:Consolas,monospace;background:var(--bg);padding:6px 10px;border-radius:8px;display:block;margin:6px 0}
+.gtags{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.gsearch{width:100%;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font:inherit;padding:10px 12px;margin:8px 0}
+.cat{font-size:.75rem;color:var(--sub);margin-left:8px;font-weight:400}
+label.sw{display:flex;align-items:center;gap:10px;color:var(--text);font-size:.95rem;cursor:pointer;margin:0 0 12px}
+label.sw input{appearance:none;-webkit-appearance:none;width:38px;height:22px;border-radius:11px;background:var(--line);position:relative;cursor:pointer;transition:.15s;margin:0;flex:none}
+label.sw input::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s}
+label.sw input:checked{background:var(--c1)}
+label.sw input:checked::after{left:19px}
+.field select:disabled,.field input:disabled{cursor:not-allowed}
+.hq{width:18px;height:18px;line-height:16px;padding:0;margin-left:4px;border:1px solid var(--c1);border-radius:50%;background:transparent;color:var(--c1);font-size:11px;font-weight:700;cursor:pointer;vertical-align:middle}
+.hq:hover{background:var(--c1);color:#fff}
+#hqpop{display:none;position:absolute;z-index:20;width:300px;max-width:calc(100vw - 24px);background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px #0003;font-size:.88rem}
+#hqpop.on{display:block}
+#hqpop div{color:var(--sub);margin:4px 0 8px}
+#hqpop a{color:var(--c1);text-decoration:none;font-weight:600}
+#btbl{font-size:.82rem}
+#btbl th,#btbl td{padding:4px 5px;white-space:nowrap}
+#btbl input,#btbl select{width:100%;min-width:56px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font:inherit;padding:5px 6px}
+#btbl input[data-f=name]{min-width:90px}
+#btbl td.chg{background:#2563eb26}
+#btbl .del{border:0;background:transparent;color:var(--sub);cursor:pointer;font-size:1rem}
+#btbl .rw small{display:block;color:var(--sub);font-size:.72rem}
+@media(max-width:560px){.modes{grid-template-columns:repeat(2,1fr)}.top{flex-wrap:wrap}}
+@media print{
+  body{background:#fff;color:#000}
+  .pm,.modes,.apply,.pnav,.gtags,.gsearch,.hq,#hqpop,#btbl .del{display:none!important}
+  .panel{break-inside:avoid;margin-bottom:14px}
+  .sum{display:none!important}
+  .sec{break-inside:avoid}
+  .wrap{padding:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>⚡ 전선 굵기 산정기</h1>
+      <div class="sub">전류(I)와 거리(L)로 전압강하 기준 최소 전선 단면적을 산정합니다. 결선 방식 버튼을 눌러 선택하세요.</div>
+    </div>
+    <div class="pm">
+      <button class="pbtn" id="pbtn">🖨 인쇄 / 내보내기 ▾</button>
+      <div class="menu" id="pmenu">
+        <button id="doPdf">PDF로 인쇄</button>
+        <button id="doXls">엑셀(.xlsx)로 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pnav">
+    <button class="tg" data-pg="pg1" aria-expanded="true">① 전선 굵기 산정</button>
+    <button class="tg" data-pg="pg2" aria-expanded="false">② 차단기 용량 산정</button>
+    <button class="tg" data-pg="pgb" aria-expanded="false">③ 회로 일괄 산정</button>
+    <button class="tg" data-pg="pg3" aria-expanded="false">④ 용어 · 공식 · 조건</button>
+  </div>
+
+  <div class="pg on" id="pg1">
+  <div class="modes" id="modes"></div>
+  <div id="panels"></div>
+  <div class="sum">
+    <b>4가지 결선 방식 결과 한눈에 보기</b>
+    <div class="tw"><table id="sum"></table></div>
+  </div>
+  <div class="note">※ 전선 길이 L은 편도 거리(m). 단상 3선·3상 4선은 전압(V)에 상(대지)전압 기준을 입력합니다. 본 결과는 전압강하 기준 계산이며, 허용전류·단락강도·시공조건은 별도 검토가 필요합니다.</div>
+
+  <!-- ===== 1. 허용전류 검토 ===== -->
+  <section class="sec" style="--ac:var(--c5)" id="s1">
+    <h2>1. 허용전류 검토</h2>
+    <div class="d">위쪽 결선 방식의 입력값(전류·거리·전압)을 불러와 전압강하 기준과 허용전류 기준 중 큰 규격을 최종으로 정합니다.</div>
+    <div class="grid">
+      <div><label>결선 방식</label><div class="field"><select id="s1m"></select></div></div>
+      <div><label>전선 종류</label><div class="field"><select id="s1t"></select></div></div>
+      <div><label>포설 방식</label><div class="field"><select id="s1w"></select></div></div>
+      <div><label>보정계수 (온도·집합 등)</label><div class="field"><input id="s1k" type="number" min="0.1" max="1.5" step="0.01" value="1"></div></div>
+    </div>
+    <div class="result" id="s1r"></div>
+    <div class="note" id="s1n"></div>
+  </section>
+
+  <!-- ===== 2. 역방향 계산 ===== -->
+  <section class="sec" style="--ac:var(--c1)" id="s2">
+    <h2>2. 역방향 계산</h2>
+    <div class="d">전선 규격과 거리를 정하면 흘릴 수 있는 최대 전류를, 전류를 정하면 갈 수 있는 최대 거리를 계산합니다. (전선 종류·포설 방식·보정계수는 1번 설정을 따릅니다.)</div>
+    <div class="grid">
+      <div><label>결선 방식</label><div class="field"><select id="s2m"></select></div></div>
+      <div><label>전선 규격</label><div class="field"><select id="s2s"></select><span>mm²</span></div></div>
+      <div><label>거리 L</label><div class="field"><input id="s2l" type="number" min="0" step="any" value="100"><span>m</span></div></div>
+      <div><label>전류 I (최대 거리 계산용)</label><div class="field"><input id="s2i" type="number" min="0" step="any" value="50"><span>A</span></div></div>
+    </div>
+    <div class="result" id="s2r"></div>
+  </section>
+
+  <!-- ===== 3. 부하 입력 ===== -->
+  <section class="sec" style="--ac:var(--c2)" id="s3">
+    <h2>3. 부하(kW) 입력</h2>
+    <div class="d">전류를 모를 때 kW, 역률, 효율로 전류를 구합니다. 전압은 위쪽 해당 결선 방식의 전압을 사용합니다.</div>
+    <div class="grid">
+      <div><label>결선 방식</label><div class="field"><select id="s3m"></select></div></div>
+      <div><label>부하 용량</label><div class="field"><input id="s3p" type="number" min="0" step="any" value="30"><span>kW</span></div></div>
+      <div><label>역률 cosφ</label><div class="field"><input id="s3f" type="number" min="0.1" max="1" step="0.01" value="0.9"></div></div>
+      <div><label>효율 η</label><div class="field"><input id="s3e" type="number" min="0.1" max="1" step="0.01" value="1"></div></div>
+    </div>
+    <div class="result" id="s3r"></div>
+    <button class="apply" id="s3a">이 전류를 위쪽 전류칸에 반영</button>
+  </section>
+
+  <!-- ===== 4. 그래프 ===== -->
+  <section class="sec" style="--ac:var(--c3)" id="s4">
+    <h2>4. 전류·거리 변화 그래프</h2>
+    <div class="d">가로축을 거리 또는 전류로 바꿔 필요 단면적 변화를 곡선으로 확인합니다. 점은 현재 입력값, 점선은 표준 규격입니다.</div>
+    <div class="grid">
+      <div><label>결선 방식</label><div class="field"><select id="s4m"></select></div></div>
+      <div><label>가로축</label><div class="field"><select id="s4a"><option value="L">거리 L 변화</option><option value="I">전류 I 변화</option></select></div></div>
+    </div>
+    <div class="tw"><svg class="ch" id="s4c" viewBox="0 0 660 270" width="100%" role="img" aria-label="필요 단면적 그래프"></svg></div>
+    <div class="legend" id="s4l"></div>
+  </section>
+  </div>
+
+  <!-- ===== 페이지 2: 차단기 용량 ===== -->
+  <div class="pg" id="pg2">
+    <div class="pgh">차단기 용량 산정</div>
+    <div class="sub">① 부하 → ② 차단기 종류 → (선택) 단락전류·전선 협조 검토 순서로 입력하세요. 결선 방식 버튼마다 따로 계산됩니다.</div>
+    <div class="modes" id="bmodes"></div>
+    <div id="bpanels"></div>
+    <div class="sum">
+      <b>4가지 결선 방식 차단기 결과 한눈에 보기</b>
+      <div class="tw"><table id="bsum"></table></div>
+    </div>
+    <div class="note">※ 차단기 페이지의 전압은 모두 선간전압입니다(단상 3선 220V, 3상 4선 380V). 정격·프레임·차단용량 목록은 참고용 예시이며 제조사 카탈로그와 현행 규정으로 확인하세요.</div>
+  </div>
+
+  <!-- ===== 페이지 3: 회로 일괄 산정 ===== -->
+  <div class="pg" id="pgb">
+    <div class="pgh">회로 일괄 산정</div>
+    <div class="sub">회로를 한 줄씩 입력하면 전선 굵기와 차단기가 같이 나옵니다. 아래 기본값은 새로 추가하는 줄에 적용되고, 줄마다 따로 고를 수 있습니다.</div>
+    <div class="sec" style="--ac:var(--c5);margin-top:0">
+      <div class="grid">
+        <div><label>기본 전선 종류</label><div class="field"><select id="bdt"></select></div></div>
+        <div><label>기본 포설 방식</label><div class="field"><select id="bdw"></select></div></div>
+        <div><label>기본 허용 전압강하율</label><div class="field"><select id="bdp"><option value="2">2 %</option><option value="3" selected>3 %</option><option value="5">5 %</option><option value="6">6 %</option></select></div></div>
+        <div><label>기본 차단기 종류</label><div class="field"><select id="bdb"></select></div></div>
+        <div><label>역률 cosφ (공통)</label><div class="field"><input id="bdf" type="number" min="0.1" max="1" step="0.01" value="0.9"></div></div>
+        <div><label>여유율 (공통)</label><div class="field"><select id="bdm"><option value="1">×1.0</option><option value="1.1">×1.1</option><option value="1.25" selected>×1.25</option><option value="1.5">×1.5</option></select></div></div>
+      </div>
+      <div class="tw" style="margin-top:14px"><table id="btbl" style="min-width:980px"></table></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="apply" id="badd" type="button" style="margin-top:0">+ 회로 추가</button>
+        <button class="apply" id="bxls" type="button" style="margin-top:0;background:var(--c2)">이 표를 엑셀로 저장</button>
+      </div>
+      <div class="note">※ 전압 V는 선간전압입니다. 전선은 전압강하 기준 규격과 차단기 정격(In ≤ Iz)을 만족하는 규격 중 큰 쪽으로 정합니다. 단상 3선은 선↔중성선(V÷2), 3상 4선은 상전압(V÷√3) 기준으로 전압강하를 계산합니다. 파란 칸은 기본값과 다르게 고른 값입니다.</div>
+    </div>
+  </div>
+
+  <!-- ===== 페이지 4: 용어·공식·조건 ===== -->
+  <div class="pg" id="pg3">
+    <div class="pgh">용어 · 공식 · 조건</div>
+    <div class="sub">필요한 항목만 열어 보세요.</div>
+    <div class="gtags">
+      <button class="tg s" data-gs="gt" aria-expanded="true">용어</button>
+      <button class="tg s" data-gs="gf" aria-expanded="false">공식</button>
+      <button class="tg s" data-gs="gc" aria-expanded="false">조건</button>
+    </div>
+    <div id="gt"><input class="gsearch" id="gq" placeholder="용어 검색 (예: 허용전류, MCCB, %Z)"><div id="gtl"></div></div>
+    <div id="gf" style="display:none"></div>
+    <div id="gc" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+/* ============ 허용전류 데이터 (교체용) ============
+   단위 A, 구리 도체, 부하 3선 기준 참고값(예시). 규정이 바뀌면 이 블록만 교체하세요.
+   구조: 전선종류 → 포설방식 → { 규격(mm²): 허용전류(A) } */
+const AMPACITY={
+ "PVC 70℃":{
+  "전선관 매입(B1)":{1.5:13.5,2.5:18,4:24,6:31,10:42,16:56,25:73,35:89,50:108,70:136,95:164,120:188,150:216,185:245,240:286,300:328},
+  "트레이·공기중(E)":{1.5:17.5,2.5:24,4:32,6:41,10:57,16:76,25:101,35:125,50:151,70:192,95:232,120:269,150:309,185:353,240:415,300:477}
+ },
+ "XLPE 90℃":{
+  "전선관 매입(B1)":{1.5:17,2.5:23,4:31,6:40,10:54,16:73,25:95,35:117,50:141,70:179,95:216,120:249,150:285,185:324,240:380,300:435},
+  "트레이·공기중(E)":{1.5:22,2.5:30,4:40,6:51,10:70,16:94,25:119,35:148,50:180,70:232,95:282,120:328,150:379,185:434,240:514,300:593}
+ }
+};
+/* ================================================== */
+
+const SIZES=[1.5,2.5,4,6,10,16,25,35,50,70,95,120,150,185,240,300,400,500,630];
+const MODES=[
+  {name:"단상 2선식",sub:"1φ2W",K:35.6,V:220,I:20,L:50,col:"--c1",hex:"FF2563EB",
+   f:"A = 35.6 × L × I / (1000 × e)",vn:"전압(선간) V",
+   svg:'<line x1="6" y1="14" x2="54" y2="14" stroke="currentColor" stroke-width="3"/><line x1="6" y1="28" x2="54" y2="28" stroke="currentColor" stroke-width="3"/>'},
+  {name:"3상 3선식",sub:"3φ3W",K:30.8,V:380,I:30,L:100,col:"--c2",hex:"FF16A34A",
+   f:"A = 30.8 × L × I / (1000 × e)",vn:"선간전압 V",
+   svg:'<line x1="6" y1="10" x2="54" y2="10" stroke="currentColor" stroke-width="3"/><line x1="6" y1="21" x2="54" y2="21" stroke="currentColor" stroke-width="3"/><line x1="6" y1="32" x2="54" y2="32" stroke="currentColor" stroke-width="3"/>'},
+  {name:"단상 3선식",sub:"1φ3W",K:17.8,V:110,I:30,L:80,col:"--c3",hex:"FFD97706",
+   f:"A = 17.8 × L × I / (1000 × e)",vn:"대지전압(선↔중성선) V",
+   svg:'<line x1="6" y1="10" x2="54" y2="10" stroke="currentColor" stroke-width="3"/><line x1="6" y1="21" x2="54" y2="21" stroke="currentColor" stroke-width="3" stroke-dasharray="6 3"/><line x1="6" y1="32" x2="54" y2="32" stroke="currentColor" stroke-width="3"/>'},
+  {name:"3상 4선식",sub:"3φ4W",K:17.8,V:220,I:50,L:150,col:"--c4",hex:"FFDC2626",
+   f:"A = 17.8 × L × I / (1000 × e)",vn:"상전압(선↔중성선) V",
+   svg:'<line x1="6" y1="8" x2="54" y2="8" stroke="currentColor" stroke-width="3"/><line x1="6" y1="17" x2="54" y2="17" stroke="currentColor" stroke-width="3"/><line x1="6" y1="26" x2="54" y2="26" stroke="currentColor" stroke-width="3"/><line x1="6" y1="35" x2="54" y2="35" stroke="currentColor" stroke-width="3" stroke-dasharray="6 3"/>'}
+];
+const $=s=>document.querySelector(s);
+const fmt=(x,d=2)=>isFinite(x)?x.toLocaleString("ko-KR",{maximumFractionDigits:d}):"-";
+const pick=a=>SIZES.find(s=>s>=a-1e-9)||null;
+
+function calc(m,V,I,L,pct){
+  const e=V*pct/100;
+  const need=m.K*L*I/(1000*e);
+  const sel=pick(need);
+  const eAct=sel?m.K*L*I/(1000*sel):NaN;
+  return {e,need,sel,eAct,pAct:eAct/V*100};
+}
+function vals(i){
+  const p=$("#p"+i);
+  const g=n=>parseFloat(p.querySelector("[name="+n+"]").value);
+  return {V:g("V"),I:g("I"),L:g("L"),pct:g("pct")};
+}
+
+/* ---------- 기본 화면 구성 (기존 유지) ---------- */
+MODES.forEach((m,i)=>{
+  $("#modes").insertAdjacentHTML("beforeend",
+   `<button class="mode" data-m="${i}"><svg width="60" height="42" viewBox="0 0 60 42">${m.svg}</svg><b>${m.name}</b><small>${m.sub}</small></button>`);
+  $("#panels").insertAdjacentHTML("beforeend",
+  `<section class="panel" id="p${i}" style="--ac:var(${m.col})">
+    <div class="formula">${m.name} : ${m.f} &nbsp;(L:m, I:A, e:V, A:mm²)</div>
+    <div class="grid">
+      <div><label>전류 I</label><div class="field"><input name="I" type="number" min="0" step="any" value="${m.I}"><span>A</span></div></div>
+      <div><label>거리 L (편도)</label><div class="field"><input name="L" type="number" min="0" step="any" value="${m.L}"><span>m</span></div></div>
+      <div><label>${m.vn}</label><div class="field"><input name="V" type="number" min="1" step="any" value="${m.V}"><span>V</span></div></div>
+      <div><label>허용 전압강하율</label><div class="field"><select name="pct"><option value="2">2 %</option><option value="3" selected>3 %</option><option value="5">5 %</option><option value="6">6 %</option></select></div></div>
+    </div>
+    <div class="result">
+      <div class="box main"><div class="k">선정 규격 (표준)</div><div class="v" data-r="sel"></div><div class="n" data-r="need"></div></div>
+      <div class="box"><div class="k">허용 전압강하 e</div><div class="v" data-r="e"></div></div>
+      <div class="box"><div class="k">선정 후 실제 전압강하</div><div class="v" data-r="act"></div><div class="n" data-r="pa"></div></div>
+    </div>
+    <h3>전류·거리 변화에 따른 선정 규격 (mm²)</h3>
+    <div class="tw"><table data-r="tbl"></table></div>
+  </section>`);
+});
+
+function sens(m,V,I,L,pct){
+  const f=[0.5,0.75,1,1.5,2];
+  return {f,rows:f.map(a=>f.map(b=>calc(m,V,I*b,L*a,pct).sel))};
+}
+function render(i){
+  const m=MODES[i],p=$("#p"+i),{V,I,L,pct}=vals(i);
+  const q=n=>p.querySelector("[data-r="+n+"]");
+  if(!(V>0&&I>=0&&L>=0)){return;}
+  const r=calc(m,V,I,L,pct);
+  q("sel").textContent=r.sel?r.sel+" mm²":"규격 초과";
+  q("need").textContent="계산값 A = "+fmt(r.need)+" mm²";
+  q("e").textContent=fmt(r.e)+" V";
+  q("act").textContent=r.sel?fmt(r.eAct)+" V":"-";
+  q("pa").innerHTML=r.sel?`<span class="${r.pAct<=pct?"ok":"ng"}">${fmt(r.pAct)} % ${r.pAct<=pct?"≤":">"} ${pct} %</span>`:"";
+  const fi=[0.5,0.75,1,1.5,2],fl=[0.5,0.75,1,1.5,2];
+  let h="<tr><th>거리＼전류</th>"+fi.map(f=>`<th>${fmt(I*f,1)} A</th>`).join("")+"</tr>";
+  fl.forEach(a=>{
+    h+=`<tr><th>${fmt(L*a,1)} m</th>`+fi.map(b=>{
+      const x=calc(m,V,I*b,L*a,pct);
+      return `<td class="${a==1&&b==1?"cur":""}">${x.sel||"초과"}</td>`;
+    }).join("")+"</tr>";
+  });
+  q("tbl").innerHTML=h;
+}
+function renderSum(){
+  let h="<tr><th>결선</th><th>전류</th><th>거리</th><th>계산값</th><th>선정</th></tr>";
+  MODES.forEach((m,i)=>{
+    const {V,I,L,pct}=vals(i);
+    if(!(V>0)){return;}
+    const r=calc(m,V,I,L,pct);
+    h+=`<tr><td style="color:var(${m.col});font-weight:700">${m.name}</td><td>${fmt(I,1)} A</td><td>${fmt(L,1)} m</td><td>${fmt(r.need)} mm²</td><td><b>${r.sel?r.sel+" mm²":"초과"}</b></td></tr>`;
+  });
+  $("#sum").innerHTML=h;
+}
+function show(i){
+  document.querySelectorAll("#modes .mode").forEach((b,j)=>b.classList.toggle("on",i==j));
+  document.querySelectorAll("#panels .panel").forEach((b,j)=>b.classList.toggle("on",i==j));
+}
+document.querySelectorAll("#modes .mode").forEach(b=>b.onclick=()=>show(+b.dataset.m));
+
+/* ---------- 추가 섹션 공통 ---------- */
+const modeOpts=MODES.map((m,i)=>`<option value="${i}">${m.name}</option>`).join("");
+["s1m","s2m","s3m","s4m"].forEach(id=>$("#"+id).innerHTML=modeOpts);
+$("#s1t").innerHTML=Object.keys(AMPACITY).map(k=>`<option>${k}</option>`).join("");
+function fillWays(){
+  const t=$("#s1t").value;
+  $("#s1w").innerHTML=Object.keys(AMPACITY[t]).map(k=>`<option>${k}</option>`).join("");
+}
+fillWays();
+$("#s2s").innerHTML=SIZES.map(s=>`<option ${s==35?"selected":""}>${s}</option>`).join("");
+const ampTable=()=>AMPACITY[$("#s1t").value][$("#s1w").value];
+const kcor=()=>parseFloat($("#s1k").value)||1;
+const ampSize=(t,k,I)=>SIZES.find(s=>t[s]!=null&&t[s]*k>=I)||null;
+const LAST={};
+
+/* 1. 허용전류 검토 */
+function sec1(){
+  const i=+$("#s1m").value,m=MODES[i],{V,I,L,pct}=vals(i);
+  const t=ampTable(),k=kcor();
+  const r=calc(m,V,I,L,pct),sa=ampSize(t,k,I);
+  const fin=(r.sel&&sa)?Math.max(r.sel,sa):null;
+  const ampOf=fin?t[fin]*k:NaN;
+  LAST.s1={i,V,I,L,pct,type:$("#s1t").value,way:$("#s1w").value,k,vd:r.sel,amp:sa,fin,ampOf};
+  $("#s1r").innerHTML=
+   `<div class="box"><div class="k">전압강하 기준</div><div class="v">${r.sel?r.sel+" mm²":"초과"}</div><div class="n">${m.name}, ${fmt(I,1)}A, ${fmt(L,1)}m</div></div>
+    <div class="box"><div class="k">허용전류 기준</div><div class="v">${sa?sa+" mm²":"표 범위 초과"}</div><div class="n">I ≤ 허용전류 × ${k}</div></div>
+    <div class="box main"><div class="k">최종 (큰 쪽)</div><div class="v">${fin?fin+" mm²":"-"}</div><div class="n">${fin?"허용전류 "+fmt(ampOf,1)+" A":"규격 확인 필요"}</div></div>`;
+  $("#s1n").textContent="※ 허용전류는 3선 부하 기준 참고값이며 단상 회로에도 동일 표를 적용합니다. 규정 개정 시 소스의 AMPACITY 블록을 교체하세요.";
+}
+
+/* 2. 역방향 */
+function sec2(){
+  const i=+$("#s2m").value,m=MODES[i],{V,pct}=vals(i);
+  const A=parseFloat($("#s2s").value),L=parseFloat($("#s2l").value),I=parseFloat($("#s2i").value);
+  const e=V*pct/100,t=ampTable(),k=kcor();
+  const imaxVd=L>0?1000*e*A/(m.K*L):NaN;
+  const imaxAmp=t[A]!=null?t[A]*k:NaN;
+  const imax=Math.min(imaxVd,isNaN(imaxAmp)?Infinity:imaxAmp);
+  const lmax=I>0?1000*e*A/(m.K*I):NaN;
+  LAST.s2={i,A,L,I,imaxVd,imaxAmp,imax,lmax};
+  $("#s2r").innerHTML=
+   `<div class="box main"><div class="k">최대 전류 (둘 중 작은 값)</div><div class="v">${fmt(imax,1)} A</div><div class="n">${m.name}, ${A} mm², ${fmt(L,1)} m</div></div>
+    <div class="box"><div class="k">전압강하 기준 최대 전류</div><div class="v">${fmt(imaxVd,1)} A</div></div>
+    <div class="box"><div class="k">허용전류 기준 최대 전류</div><div class="v">${fmt(imaxAmp,1)} A</div></div>
+    <div class="box"><div class="k">최대 허용 거리 (${fmt(I,1)} A 흘릴 때)</div><div class="v">${fmt(lmax,1)} m</div></div>`;
+}
+
+/* 3. 부하 → 전류 */
+function loadCurrent(i,P,pf,eta){
+  const V=vals(i).V;
+  const div=[1,Math.sqrt(3),2,3][i]; /* 단상2선, 3상3선, 단상3선(대지전압), 3상4선(상전압) */
+  return P*1000/(div*V*pf*eta);
+}
+function sec3(){
+  const i=+$("#s3m").value,m=MODES[i];
+  const P=parseFloat($("#s3p").value),pf=parseFloat($("#s3f").value),eta=parseFloat($("#s3e").value);
+  const I=loadCurrent(i,P,pf,eta);
+  const fm=["I = P / (V·cosφ·η)","I = P / (√3·V·cosφ·η)","I = P / (2·V·cosφ·η)  (평형부하)","I = P / (3·V·cosφ·η)"][i];
+  LAST.s3={i,P,pf,eta,I};
+  $("#s3r").innerHTML=
+   `<div class="box main"><div class="k">계산된 전류</div><div class="v">${fmt(I,1)} A</div><div class="n">${m.name}, V=${vals(i).V} V</div></div>
+    <div class="box"><div class="k">적용식</div><div class="n" style="font-size:.95rem;color:var(--text);font-family:Consolas,monospace">${fm}</div></div>`;
+}
+$("#s3a").onclick=()=>{
+  const i=+$("#s3m").value;
+  const I=LAST.s3?.I;
+  if(!isFinite(I)){alert("부하 값을 확인하세요.");return;}
+  $("#p"+i).querySelector("[name=I]").value=Math.round(I*10)/10;
+  show(i);refresh();
+  $("#p"+i).scrollIntoView({behavior:"smooth",block:"center"});
+};
+
+/* 4. 그래프 */
+function sec4(){
+  const i=+$("#s4m").value,m=MODES[i],{V,I,L,pct}=vals(i),axis=$("#s4a").value;
+  const e=V*pct/100;
+  const base=axis=="L"?L:I,xmax=base>0?base*2:1;
+  const fn=(x,f)=>axis=="L"?m.K*x*I*f/(1000*e):m.K*L*x*f/(1000*e);
+  const W=660,H=270,x0=60,x1=640,y0=20,y1=220;
+  const ymax=Math.max(fn(xmax,1.3),0.1)*1.08;
+  const X=x=>x0+(x/xmax)*(x1-x0),Y=y=>y1-(y/ymax)*(y1-y0);
+  const cols=["#1D9E75",getComputedStyle(document.documentElement).getPropertyValue(m.col).trim()||"#2563eb","#D85A30"];
+  const fs=[0.7,1,1.3];
+  let s=`<line x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}" stroke="var(--line)"/><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}" stroke="var(--line)"/>`;
+  SIZES.filter(z=>z<=ymax).forEach(z=>{
+    s+=`<line x1="${x0}" y1="${Y(z)}" x2="${x1}" y2="${Y(z)}" stroke="var(--line)" stroke-dasharray="4 4"/><text x="${x0-6}" y="${Y(z)+4}" text-anchor="end">${z}</text>`;
+  });
+  for(let t=0;t<=5;t++){const xv=xmax*t/5;s+=`<text x="${X(xv)}" y="${y1+16}" text-anchor="middle">${fmt(xv,1)}</text>`;}
+  s+=`<text x="${(x0+x1)/2}" y="${H-8}" text-anchor="middle">${axis=="L"?"거리 L (m)":"전류 I (A)"}</text><text x="12" y="${y0+4}">A (mm²)</text>`;
+  fs.forEach((f,n)=>{
+    const pts=[];for(let k=0;k<=40;k++){const x=xmax*k/40;pts.push(X(x)+","+Y(fn(x,f)));}
+    s+=`<polyline points="${pts.join(" ")}" fill="none" stroke="${cols[n]}" stroke-width="${n==1?3:2}"/>`;
+  });
+  if(base>0){s+=`<circle cx="${X(base)}" cy="${Y(fn(base,1))}" r="6" fill="${cols[1]}" stroke="var(--card)" stroke-width="2"/><text x="${X(base)+8}" y="${Y(fn(base,1))-8}" style="fill:var(--text);font-weight:700">${fmt(fn(base,1))} mm²</text>`;}
+  $("#s4c").innerHTML=s;
+  const other=axis=="L"?"전류":"거리";
+  $("#s4l").innerHTML=fs.map((f,n)=>`<span><i style="background:${cols[n]}"></i>${other} ${f==1?"현재값":(f<1?"-30%":"+30%")}</span>`).join("");
+}
+
+/* ============ 차단기 데이터 (교체용) ============
+   ratings: 정격전류 AT(A), frames: 프레임 AF(A), kA: 정격차단전류 목록. 참고용 예시값 */
+const BREAKERS={
+ "MCB 배선용(소형)":{short:"MCB",ratings:[6,10,16,20,25,32,40,50,63],frames:null,kA:[3,4.5,6,10],note:"주택·소규모 분기회로용"},
+ "MCCB 배선용(산업용)":{short:"MCCB",ratings:[15,20,30,40,50,60,75,100,125,150,175,200,225,250,300,350,400,500,600,630,700,800],frames:[30,50,60,100,125,225,250,400,630,800],kA:[2.5,5,10,14,18,22,25,30,35,42,50,65,85,100],note:"분전반·간선 보호용"},
+ "ELB 누전차단기":{short:"ELB",ratings:[15,20,30,40,50,60,75,100,125,150,175,200,225,250,300,350,400],frames:[30,50,60,100,125,225,250,400],kA:[2.5,5,10,14,18,22,25],note:"감전·누전 보호 겸용(감도 30mA 등 별도 확인)"},
+ "ACB 기중차단기":{short:"ACB",ratings:[630,800,1000,1250,1600,2000,2500,3200,4000],frames:[630,800,1000,1250,1600,2000,2500,3200,4000],kA:[35,42,50,65,85,100],note:"저압 주배전반 인입·대용량 간선용"}
+};
+/* ================================================== */
+const BKR=[
+  {pole:"2P",V:220,div:1,sp:true,kW:4,kva:10,wire:10,type:"MCB 배선용(소형)"},
+  {pole:"3P",V:380,div:Math.sqrt(3),sp:false,kW:30,kva:300,wire:35,type:"MCCB 배선용(산업용)"},
+  {pole:"3P",V:220,div:1,sp:true,kW:10,kva:30,wire:35,type:"MCCB 배선용(산업용)"},
+  {pole:"4P",V:380,div:Math.sqrt(3),sp:false,kW:50,kva:500,wire:70,type:"MCCB 배선용(산업용)"}
+];
+/* 전동기 기동 방식별 기동전류 배수 (일반 참고값, 교체·수정 가능) */
+const MOTOR_START=[["직입 기동",6],["Y-Δ 기동",2],["리액터 기동",4],["인버터",1.5],["직접 입력",null]];
+const MOTOR_INST=10; /* 배선용차단기 순시 동작 약 In의 10배 (참고값) */
+const bTypeOpts=Object.keys(BREAKERS).map(k=>`<option>${k}</option>`).join("");
+MODES.forEach((m,i)=>{
+  const b=BKR[i];
+  $("#bmodes").insertAdjacentHTML("beforeend",
+   `<button class="mode" data-m="${i}"><svg width="60" height="42" viewBox="0 0 60 42">${m.svg}</svg><b>${m.name}</b><small>${b.pole} 차단기</small></button>`);
+  $("#bpanels").insertAdjacentHTML("beforeend",
+  `<section class="panel bk" id="b${i}" style="--ac:var(${m.col})">
+    <div class="formula">${m.name} : In ≥ IB × 여유율  →  표준 정격 선정  /  IB ≤ In ≤ Iz  /  Icu ≥ Isc</div>
+    <div class="grid">
+      <div><label>부하 입력 방식</label><div class="field"><select name="ld"><option value="kW">kW로 입력</option><option value="A">전류(A)로 입력</option></select></div></div>
+      <div data-g="kw"><label>부하 용량</label><div class="field"><input name="P" type="number" min="0" step="any" value="${b.kW}"><span>kW</span></div></div>
+      <div data-g="kw"><label>역률 cosφ</label><div class="field"><input name="pf" type="number" min="0.1" max="1" step="0.01" value="0.9"></div></div>
+      <div data-g="a"><label>부하전류 IB</label><div class="field"><input name="I" type="number" min="0" step="any" value="50"><span>A</span></div></div>
+      <div><label>선간전압</label><div class="field"><input name="V" type="number" min="1" step="any" value="${b.V}"><span>V</span></div></div>
+      <div><label>여유율</label><div class="field"><select name="mg"><option value="1">×1.0 (여유 없음)</option><option value="1.1">×1.1</option><option value="1.25" selected>×1.25 (연속·증설)</option><option value="1.5">×1.5</option></select></div></div>
+      <div><label>차단기 종류</label><div class="field"><select name="type">${bTypeOpts}</select></div></div>
+      <div><label>부하 종류</label><div class="field"><select name="lk"><option value="n">일반 부하</option><option value="m">전동기</option></select></div></div>
+    </div>
+    <div class="grid" data-g="mo" style="margin-top:14px">
+      <div><label>기동 방식</label><div class="field"><select name="st">${MOTOR_START.map(s=>`<option>${s[0]}</option>`).join("")}</select></div></div>
+      <div><label>기동전류 배수 (직접 수정 가능)</label><div class="field"><input name="sm" type="number" min="1" step="any" value="${MOTOR_START[1][1]}"><span>배</span></div></div>
+      <div><label>전동기 효율 η</label><div class="field"><input name="eta" type="number" min="0.1" max="1" step="0.01" value="0.92"></div></div>
+      <div><label>전선 계수 (전부하전류 ×)</label><div class="field"><input name="wk" type="number" min="1" step="0.05" value="1.25"><span>배</span></div></div>
+      <div><label>차단기 순시 동작 배수</label><div class="field"><input name="ins" type="number" min="1" step="any" value="${MOTOR_INST}"><span>× In</span></div></div>
+    </div>
+    <details class="opt"><summary>선택 · 단락전류와 전선 협조 검토 (펼치기)</summary>
+      <label class="sw" style="margin-top:12px"><input type="checkbox" name="use"> 단락전류·전선 협조 검토 사용</label>
+      <div class="grid">
+        <div><label>단락전류 입력 방식</label><div class="field"><select name="im"><option value="" selected>선택하세요</option><option value="tr">변압기 용량·%Z로 계산</option><option value="kA">직접 입력(kA)</option></select></div></div>
+        <div data-g="tr"><label>변압기 용량</label><div class="field"><input name="kva" type="number" min="0" step="any" placeholder="예: ${b.kva}"><span>kVA</span></div></div>
+        <div data-g="tr"><label>%Z</label><div class="field"><input name="z" type="number" min="0.1" step="any" placeholder="예: 5"><span>%</span></div></div>
+        <div data-g="ka"><label>단락전류 Isc</label><div class="field"><input name="kA" type="number" min="0" step="any" placeholder="예: 10"><span>kA</span></div></div>
+        <div><label>사용 전선 규격</label><div class="field"><select name="w"><option value="" selected>선택하세요</option>${SIZES.map(s=>`<option>${s}</option>`).join("")}</select><span>mm²</span></div></div>
+      </div>
+      <button class="apply" data-pull="${i}" type="button">전선 페이지 전류·규격 가져오기</button>
+    </details>
+    <div class="result" data-r="res"></div>
+    <div class="note" data-r="msg"></div>
+  </section>`);
+  const sel=$("#b"+i+" [name=type]");sel.value=b.type;
+});
+document.querySelectorAll("#bmodes .mode").forEach(b=>b.onclick=()=>bshow(+b.dataset.m));
+function bshow(i){
+  document.querySelectorAll("#bmodes .mode").forEach((b,j)=>b.classList.toggle("on",i==j));
+  document.querySelectorAll("#bpanels .panel").forEach((b,j)=>b.classList.toggle("on",i==j));
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-pull]");if(!t)return;
+  const i=+t.dataset.pull,{I}=vals(i),p=$("#b"+i);
+  p.querySelector("[name=ld]").value="A";p.querySelector("[name=I]").value=I;
+  const r=calc(MODES[i],vals(i).V,I,vals(i).L,vals(i).pct);
+  const ws=r.sel&&SIZES.includes(r.sel)?r.sel:null;if(ws)p.querySelector("[name=w]").value=ws;
+  p.querySelector("[name=use]").checked=true;
+  refresh();
+});
+document.addEventListener("input",e=>{
+  const t=e.target,p=t.closest&&t.closest("#bpanels .panel");
+  if(!p)return;
+  if(t.name=="st"){const s=MOTOR_START.find(x=>x[0]==t.value);if(s&&s[1]!=null)p.querySelector("[name=sm]").value=s[1];}
+  if(t.name=="sm"){p.querySelector("[name=st]").value="직접 입력";}
+});
+function bcalc(i){
+  const p=$("#b"+i),B=BKR[i];
+  const g=n=>p.querySelector("[name="+n+"]"),num=n=>parseFloat(g(n).value);
+  p.querySelectorAll("[data-g=kw]").forEach(e=>e.style.display=g("ld").value=="kW"?"":"none");
+  p.querySelectorAll("[data-g=a]").forEach(e=>e.style.display=g("ld").value=="A"?"":"none");
+  p.querySelectorAll("[data-g=tr]").forEach(e=>e.style.display=g("im").value=="tr"?"":"none");
+  p.querySelectorAll("[data-g=ka]").forEach(e=>e.style.display=g("im").value=="kA"?"":"none");
+  const motor=g("lk").value=="m";
+  p.querySelectorAll("[data-g=mo]").forEach(e=>e.style.display=motor?"":"none");
+  const T=BREAKERS[g("type").value],V=num("V"),mg=num("mg");
+  const eta=motor?(num("eta")||1):1;
+  const IB=g("ld").value=="kW"?num("P")*1000/(B.div*V*num("pf")*eta):num("I");
+  const Ist=motor?IB*num("sm"):NaN;
+  const need=IB*mg;
+  const In=T.ratings.find(r=>r>=need-1e-9)||null;
+  const AF=(In&&T.frames)?(T.frames.find(f=>f>=In)||null):null;
+  const use=g("use").checked;
+  p.querySelectorAll(".opt .grid input,.opt .grid select").forEach(x=>x.disabled=!use);
+  p.querySelector(".opt .grid").style.opacity=use?1:.55;
+  const imv=g("im").value;
+  p.querySelectorAll("[data-g=tr]").forEach(e=>e.style.display=imv=="tr"?"":"none");
+  p.querySelectorAll("[data-g=ka]").forEach(e=>e.style.display=imv=="kA"?"":"none");
+  let Isc=NaN;
+  if(use){
+    if(imv=="tr")Isc=(num("kva")*1000/(B.sp?V:Math.sqrt(3)*V))*100/num("z")/1000;
+    else if(imv=="kA")Isc=num("kA");
+  }
+  if(!(Isc>0)||!isFinite(Isc))Isc=NaN;
+  const Icu=isFinite(Isc)?(T.kA.find(k=>k>=Isc-1e-9)||null):null;
+  const wv=g("w").value,w=wv===""?NaN:parseFloat(wv),tb=ampTable();
+  const Iz=(use&&isFinite(w)&&tb[w]!=null)?tb[w]*kcor():NaN;
+  const wk=motor?num("wk"):1;
+  const coord=(use&&In&&isFinite(Iz))?(IB<=In&&In<=Iz&&IB*wk<=Iz):null;
+  const spec=In?`${T.short} ${B.pole} ${AF?AF+"AF / ":""}${In}AT`:"정격 초과";
+  const instOk=motor&&In?(Ist<=In*num("ins")):null;
+  const res={i,type:T.short,pole:B.pole,IB,need,In,AF,Isc,Icu,w,Iz,coord,spec,V,motor,Ist,instOk};
+  const pill=!use?'<span class="pill" style="background:var(--bg);color:var(--sub)">미적용</span>':coord==null?'<span class="pill" style="background:var(--bg);color:var(--sub)">입력 필요</span>':coord?'<span class="pill ok">적합</span>':'<span class="pill ng">부적합</span>';
+  const iscV=!use?"미적용":isFinite(Isc)?fmt(Isc,2)+" kA":"입력 필요";
+  const iscN=!use?"":isFinite(Isc)?(Icu?"선정 Icu "+Icu+" kA ≥ Isc":"목록 최대치 초과"):"입력 방식과 값을 넣어 주세요";
+  p.querySelector("[data-r=res]").innerHTML=
+   `<div class="box main"><div class="k">선정 차단기</div><div class="v">${spec}</div><div class="n">${Icu?"차단용량 "+Icu+" kA 이상":(use&&isFinite(Isc)?"차단용량 초과":"")}</div></div>
+    <div class="box"><div class="k">부하전류 IB</div><div class="v">${fmt(IB,1)} A</div><div class="n">필요 In ≥ ${fmt(need,1)} A</div></div>
+    <div class="box"><div class="k">단락전류 Isc</div><div class="v">${iscV}</div><div class="n">${iscN}</div></div>
+    <div class="box"><div class="k">전선 협조${isFinite(w)?" ("+w+" mm²)":""}</div><div class="v">${pill}</div><div class="n">${use&&isFinite(Iz)?`IB ${fmt(IB,1)} ≤ In ${In||"-"} ≤ Iz ${fmt(Iz,1)}${motor?` · IB×${wk} ≤ Iz`:""}`:(use?"전선 규격을 선택하세요":"")}</div></div>`
+   +(motor?`<div class="box"><div class="k">기동전류 (${g("st").value})</div><div class="v">${fmt(Ist,0)} A</div><div class="n">${instOk==null?"-":instOk?"순시 동작 이내 ("+fmt(In*num("ins"),0)+" A)":'<span class="ng">순시 동작 초과 ('+fmt(In*num("ins"),0)+" A)</span>"}</div></div>`:"");
+  let msg=T.note+".";
+  if(motor)msg+=" 전동기 회로는 기동 방식별 배수(참고값)와 별도 보호기기(열동계전기 등)를 함께 검토하세요."+(instOk===false?" 기동전류가 차단기 순시 동작 범위를 넘어 오동작할 수 있습니다. 정격을 올리거나 기동 방식을 바꾸세요.":"");
+  if(!In)msg+=" 정격이 목록을 초과합니다. 차단기 종류를 바꾸세요.";
+  else if(coord===false&&In>Iz)msg+=" 차단기 정격이 전선 허용전류를 넘습니다. 전선 규격을 올리거나 여유율을 낮추세요.";
+  if(use&&isFinite(Isc)&&Icu==null)msg+=" 단락전류가 목록 최대 차단용량을 넘습니다.";
+  p.querySelector("[data-r=msg]").textContent=msg;
+  return res;
+}
+function bRender(){
+  LAST.b=MODES.map((_,i)=>bcalc(i));
+  let h="<tr><th>결선</th><th>부하전류</th><th>선정 차단기</th><th>Icu</th><th>전선협조</th></tr>";
+  LAST.b.forEach((r,i)=>{h+=`<tr><td style="color:var(${MODES[i].col});font-weight:700">${MODES[i].name}</td><td>${fmt(r.IB,1)} A</td><td><b>${r.spec}</b></td><td>${r.Icu?r.Icu+" kA":(isFinite(r.Isc)?"초과":"-")}</td><td>${r.coord==null?"-":r.coord?"적합":"부적합"}</td></tr>`;});
+  $("#bsum").innerHTML=h;
+}
+
+/* ============ 용어·공식·조건 내용 ============ */
+const TERMS=[
+ ["전압강하 e","전선에 전류가 흐를 때 선로 저항 때문에 부하 쪽 전압이 낮아지는 양(V). 전류와 거리에 비례하고 단면적에 반비례합니다.","전선"],
+ ["허용 전압강하율","공급전압 대비 허용하는 전압강하의 비율(%). 이 프로그램은 2·3·5·6% 중에서 고릅니다.","전선"],
+ ["허용전류 Iz","전선이 열적으로 견디며 연속으로 흘릴 수 있는 최대 전류(A). 전선 종류, 포설 방식, 보정계수에 따라 달라집니다.","전선"],
+ ["보정계수","주위온도, 전선 집합(다조 포설) 등 설치 조건에 따라 허용전류를 줄이는 계수. 1 이하 값을 곱합니다.","전선"],
+ ["포설 방식 (B1, E)","전선을 설치하는 방법. B1은 벽 내 전선관 매입, E는 공기 중·트레이 포설을 뜻하는 참고 분류입니다.","전선"],
+ ["표준 규격","시판되는 전선 단면적 등급(1.5, 2.5, 4 … 630 mm²). 계산값 이상인 가장 가까운 규격을 고릅니다.","전선"],
+ ["선간전압 / 상전압 / 대지전압","선간전압은 두 선 사이 전압(380V 등), 상전압·대지전압은 한 선과 중성선 사이 전압(220V, 110V 등)입니다.","전압"],
+ ["중성선 N","3상 4선식·단상 3선식에서 부하 불평형 전류가 흐르는 선. 평형 부하에서는 전류가 거의 0입니다.","전압"],
+ ["평형부하","각 상(선)에 흐르는 전류가 같은 부하. 이 프로그램의 식은 평형부하를 가정합니다.","전압"],
+ ["부하전류 IB","회로에 실제로 흐르는 설계 전류(A). kW로 입력하면 역률·효율·전압으로 환산합니다.","차단기"],
+ ["역률 cosφ","유효전력을 피상전력으로 나눈 값. 낮을수록 같은 kW에 더 큰 전류가 흐릅니다.","차단기"],
+ ["여유율","부하 증설과 연속 운전을 고려해 부하전류에 곱하는 계수(예: 1.25).","차단기"],
+ ["정격전류 In (AT)","차단기가 연속으로 통전할 수 있는 정격 전류. AT는 Ampere Trip의 약자입니다.","차단기"],
+ ["프레임 AF","차단기 본체 크기를 나타내는 전류 등급. 같은 프레임 안에서 여러 AT를 선택합니다.","차단기"],
+ ["정격차단전류 Icu","차단기가 안전하게 차단할 수 있는 최대 단락전류(kA).","차단기"],
+ ["단락전류 Isc","단락 사고 때 흐르는 큰 전류. 변압기 용량과 %Z로 추정합니다.","차단기"],
+ ["%Z (퍼센트 임피던스)","변압기 정격전류가 흐를 때 내부 임피던스로 생기는 전압강하 비율. 작을수록 단락전류가 커집니다.","차단기"],
+ ["MCB","소형 배선용차단기. 주택·소규모 분기회로에 쓰고 정격이 작습니다.","차단기"],
+ ["MCCB","몰드케이스 배선용차단기. 분전반·간선 보호에 널리 씁니다.","차단기"],
+ ["ELB (누전차단기)","과전류와 단락 보호에 누전(지락) 검출 기능을 더한 차단기. 감전 보호용으로 감도 30mA 등이 쓰입니다.","차단기"],
+ ["ACB","기중차단기. 대용량 저압 주배전반 인입에 씁니다.","차단기"],
+ ["기동 방식","전동기를 시동하는 방법. 직입은 전압을 그대로 걸고, Y-Δ·리액터·인버터는 기동전류를 줄이는 방식입니다.","전동기"],
+ ["기동전류","전동기가 시동될 때 순간적으로 흐르는 큰 전류. 전부하전류에 기동 배수를 곱해 추정합니다. 직입 약 6배, Y-Δ 약 2배, 리액터 약 4배, 인버터 약 1.5배는 일반 참고값입니다.","전동기"],
+ ["전선 계수 (전동기)","전동기 회로 전선은 전부하전류에 이 계수(일반 1.25)를 곱한 값 이상의 허용전류가 필요합니다.","전동기"],
+ ["순시 동작","차단기가 큰 전류에서 지연 없이 바로 끊는 동작. 배선용차단기는 정격의 약 10배 안팎(참고값)에서 동작합니다.","전동기"]
+];
+const FORMS=[
+ ["전압강하 기준 전선 단면적",["단상 2선식: A = 35.6·L·I / (1000·e)","3상 3선식: A = 30.8·L·I / (1000·e)","단상 3선식, 3상 4선식: A = 17.8·L·I / (1000·e)"],"A: 단면적(mm²), L: 편도 거리(m), I: 전류(A), e: 허용 전압강하(V) = 전압 × 허용율. 단상 3선·3상 4선은 선↔중성선 전압을 씁니다."],
+ ["부하전류 환산 (전선 페이지)",["단상 2선식: I = P / (V·cosφ·η)","3상 3선식: I = P / (√3·V·cosφ·η)","단상 3선식(대지전압): I = P / (2·V·cosφ·η)","3상 4선식(상전압): I = P / (3·V·cosφ·η)"],"P: 전력(W), V: 전압(V). 평형부하 기준입니다."],
+ ["부하전류 환산 (차단기 페이지)",["단상 2선식, 단상 3선식(선간 220V): I = P / (V·cosφ)","3상 3선식, 3상 4선식(선간 380V): I = P / (√3·V·cosφ)"],"차단기 페이지는 모두 선간전압으로 계산합니다."],
+ ["차단기 정격 선정",["필요 In = IB × 여유율","선정 In = 필요 In 이상인 가장 작은 표준 정격"],"프레임 AF는 선정 In 이상인 가장 작은 프레임을 씁니다."],
+ ["전선·차단기 협조",["IB ≤ In ≤ Iz"],"차단기 정격이 부하전류 이상이고 전선 허용전류 이하여야 전선이 보호됩니다."],
+ ["단락전류 추정",["3상: Isc = (kVA·1000 / (√3·V)) × 100 / %Z","단상: Isc = (kVA·1000 / V) × 100 / %Z"],"변압기 2차 단자 기준이며 선로 임피던스는 무시한 안전측 값입니다. 선정 Icu는 Isc 이상이어야 합니다."],
+ ["전동기 부하",["전부하전류 IB = P / (√3·V·cosφ·η)  (3상 기준)","기동전류 Ist = IB × 기동 배수","전선 조건: Iz ≥ IB × 1.25","순시 확인: Ist ≤ In × 순시 동작 배수"],"기동 배수, 전선 계수, 순시 동작 배수는 입력칸에서 직접 수정할 수 있습니다."],
+ ["역방향 계산",["최대 전류 Imax = 1000·e·A / (K·L)","최대 거리 Lmax = 1000·e·A / (K·I)"],"K는 결선별 계수(35.6, 30.8, 17.8)입니다. 최대 전류는 허용전류와 비교해 작은 쪽을 씁니다."]
+];
+const CONDS=[
+ ["전압강하 한도 (참고)",["저압 수전 시 조명 3%, 기타 5% 이내가 일반 기준입니다.","고압 이상 수전 시 조명 6%, 기타 8% 이내가 일반 기준입니다.","선로가 길면 기준이 일부 완화되는 규정이 있습니다. 현행 KEC와 내선규정을 확인하세요."]],
+ ["차단기 선정 조건",["정격전류: IB ≤ In ≤ Iz","차단용량: Icu ≥ 설치점 단락전류 Isc","극수: 단상 2선 2P, 단상 3선 3P, 3상 3선 3P, 3상 4선 4P가 일반적입니다.","욕실·옥외 등 감전 위험 장소는 누전차단기(ELB)를 검토합니다."]],
+ ["전동기 부하",["차단기 페이지에서 부하 종류를 '전동기'로 고르면 기동 방식별 기동전류 배수(기본값)를 적용합니다. 배수는 직접 수정할 수 있습니다.","전선은 전부하전류 × 전선 계수(기본 1.25) 이하의 허용전류 조건을 함께 검토합니다.","기동전류가 차단기 순시 동작 범위를 넘으면 오동작할 수 있습니다. 열동계전기 등 별도 보호기기 검토는 이 프로그램 범위 밖입니다."]],
+ ["이 프로그램의 가정",["거리 L은 편도(m), 도체는 구리, 부하는 평형입니다.","허용전류표와 차단기 정격 목록은 참고용 예시이며, 규정이 바뀌면 소스의 AMPACITY, BREAKERS 블록을 교체합니다.","단상 3선식의 전압은 전선 페이지가 대지전압(110V), 차단기 페이지가 선간전압(220V)입니다.","전압강하, 허용전류, 단락강도 외의 시공 조건은 별도 검토가 필요합니다."]]
+];
+function gDetail(h,body){return `<details class="g"><summary>${h}</summary><div class="b">${body}</div></details>`;}
+function renderTerms(){
+  const q=($("#gq").value||"").trim().toLowerCase();
+  const list=TERMS.filter(t=>!q||(t[0]+t[1]+t[2]).toLowerCase().includes(q));
+  $("#gtl").innerHTML=list.length?list.map(t=>gDetail(`${t[0]}<span class="cat">${t[2]}</span>`,t[1])).join(""):'<div class="note">검색 결과가 없습니다.</div>';
+}
+$("#gf").innerHTML=FORMS.map(f=>gDetail(f[0],f[1].map(x=>`<span class="fm">${x}</span>`).join("")+`<div class="note">${f[2]}</div>`)).join("");
+$("#gc").innerHTML=CONDS.map(c=>gDetail(c[0],"<ul>"+c[1].map(x=>`<li>${x}</li>`).join("")+"</ul>")).join("");
+$("#gq").addEventListener("input",renderTerms);
+renderTerms();
+
+/* ============ 회로 일괄 산정 ============ */
+const B_V=[220,380,220,380],B_DIV=[1,Math.sqrt(3),1,Math.sqrt(3)],B_VW=[1,1,.5,1/Math.sqrt(3)];
+const BROWS=[];
+$("#bdt").innerHTML=Object.keys(AMPACITY).map(k=>`<option>${k}</option>`).join("");
+$("#bdb").innerHTML=bTypeOpts;$("#bdb").value="MCCB 배선용(산업용)";
+function bdFill(){$("#bdw").innerHTML=Object.keys(AMPACITY[$("#bdt").value]).map(k=>`<option>${k}</option>`).join("");}
+bdFill();
+const optH=(arr,sel)=>arr.map(x=>`<option value="${x}" ${x==sel?"selected":""}>${x}</option>`).join("");
+function newRow(d){
+  return Object.assign({name:"회로 "+(BROWS.length+1),mode:1,kw:10,V:380,L:50,wt:$("#bdt").value,way:$("#bdw").value,pct:$("#bdp").value,bt:$("#bdb").value},d||{});
+}
+function renderBRows(){
+  let h="<tr><th>회로명</th><th>결선</th><th>kW</th><th>전압 V</th><th>거리 m</th><th>전선 종류</th><th>포설</th><th>강하율</th><th>차단기 종류</th><th>전류 A</th><th>전선</th><th>차단기</th><th>판정</th><th></th></tr>";
+  BROWS.forEach((r,k)=>{
+    const ways=Object.keys(AMPACITY[r.wt]);
+    if(!ways.includes(r.way))r.way=ways[0];
+    h+=`<tr data-k="${k}">
+     <td><input data-f="name" value="${r.name}"></td>
+     <td><select data-f="mode">${MODES.map((m,i)=>`<option value="${i}" ${i==r.mode?"selected":""}>${m.name}</option>`).join("")}</select></td>
+     <td><input data-f="kw" type="number" min="0" step="any" value="${r.kw}"></td>
+     <td><input data-f="V" type="number" min="1" step="any" value="${r.V}"></td>
+     <td><input data-f="L" type="number" min="0" step="any" value="${r.L}"></td>
+     <td><select data-f="wt">${optH(Object.keys(AMPACITY),r.wt)}</select></td>
+     <td><select data-f="way">${optH(ways,r.way)}</select></td>
+     <td><select data-f="pct">${optH(["2","3","5","6"],String(r.pct))}</select></td>
+     <td><select data-f="bt">${optH(Object.keys(BREAKERS),r.bt)}</select></td>
+     <td class="rI"></td><td class="rw"></td><td class="rb"></td><td class="rj"></td>
+     <td><button class="del" type="button" data-del="${k}" aria-label="줄 삭제">✕</button></td></tr>`;
+  });
+  $("#btbl").innerHTML=h;
+  batchCalc();
+}
+function rowCalc(r){
+  const m=MODES[r.mode],pf=parseFloat($("#bdf").value)||0.9,mg=parseFloat($("#bdm").value)||1.25;
+  const I=r.kw*1000/(B_DIV[r.mode]*r.V*pf);
+  const T=BREAKERS[r.bt];
+  const In=T.ratings.find(x=>x>=I*mg-1e-9)||null;
+  const AF=(In&&T.frames)?(T.frames.find(f=>f>=In)||null):null;
+  const e=r.V*B_VW[r.mode]*r.pct/100;
+  const need=m.K*r.L*I/(1000*e),vd=pick(need);
+  const tb=AMPACITY[r.wt][r.way],k=kcor();
+  const amp=In?(SIZES.find(s=>tb[s]!=null&&tb[s]*k>=In)||null):null;
+  const wire=(vd&&amp)?Math.max(vd,amp):null;
+  const by=wire?(amp>vd?"허용전류 기준":"전압강하 기준"):"";
+  const spec=In?`${T.short} ${BKR[r.mode].pole} ${AF?AF+"AF/":""}${In}AT`:"정격 초과";
+  return {I,In,spec,wire,by,ok:!!(wire&&In)};
+}
+function batchCalc(){
+  const trs=document.querySelectorAll("#btbl tr[data-k]");
+  const out=[];
+  trs.forEach(tr=>{
+    const r=BROWS[+tr.dataset.k],x=rowCalc(r);out.push({r,x});
+    tr.querySelector(".rI").textContent=fmt(x.I,1);
+    tr.querySelector(".rw").innerHTML=x.wire?`<b>${x.wire} mm²</b><small>${x.by}</small>`:"초과";
+    tr.querySelector(".rb").textContent=x.spec;
+    tr.querySelector(".rj").innerHTML=x.ok?'<span class="pill ok">적합</span>':'<span class="pill ng">확인 필요</span>';
+    const chg=(f,c)=>tr.querySelector("[data-f="+f+"]").parentElement.classList.toggle("chg",c);
+    chg("wt",r.wt!=$("#bdt").value);chg("way",r.way!=$("#bdw").value);chg("pct",String(r.pct)!=$("#bdp").value);
+    chg("bt",r.bt!=$("#bdb").value);chg("V",+r.V!=B_V[r.mode]);
+  });
+  LAST.rows=out;
+}
+$("#btbl").addEventListener("input",e=>{
+  const el=e.target,f=el.dataset.f;if(!f)return;
+  const tr=el.closest("tr"),r=BROWS[+tr.dataset.k];
+  r[f]=["name","wt","way","pct","bt"].includes(f)?el.value:(f=="mode"?+el.value:parseFloat(el.value)||0);
+  if(f=="mode"){r.V=B_V[r.mode];tr.querySelector("[data-f=V]").value=r.V;}
+  if(f=="wt"){renderBRows();return;}
+  batchCalc();
+});
+$("#btbl").addEventListener("click",e=>{
+  const d=e.target.closest("[data-del]");if(!d)return;
+  BROWS.splice(+d.dataset.del,1);renderBRows();
+});
+$("#badd").onclick=()=>{BROWS.push(newRow());renderBRows();};
+$("#bdt").addEventListener("change",bdFill);
+BROWS.push(newRow({name:"1층 조명",mode:0,kw:3,V:220,L:45}),newRow({name:"공조기",mode:1,kw:22,V:380,L:80}),newRow({name:"펌프",mode:3,kw:55,V:380,L:120}));
+renderBRows();
+
+function addBatchSheet(wb){
+  batchCalc();
+  const ws=wb.addWorksheet("회로일괄");
+  const thin={style:"thin",color:{argb:"FFBBBBBB"}},bd={top:thin,left:thin,bottom:thin,right:thin};
+  const fill=c=>({type:"pattern",pattern:"solid",fgColor:{argb:c}});
+  const cols=["회로명","결선","부하(kW)","전압(V)","거리(m)","전선 종류","포설","강하율(%)","차단기 종류","전류(A)","전선(mm²)","전선 기준","차단기","판정"];
+  ws.mergeCells(1,1,1,cols.length);
+  const t=ws.getCell(1,1);t.value="회로 일괄 산정 · "+new Date().toLocaleDateString("ko-KR");
+  t.font={bold:true,size:14,color:{argb:"FFFFFFFF"}};t.fill=fill("FF7C3AED");ws.getRow(1).height=28;
+  cols.forEach((c,k)=>{const x=ws.getCell(3,k+1);x.value=c;x.font={bold:true};x.fill=fill("FFEEF1F6");x.alignment={horizontal:"center"};x.border=bd;});
+  [14,12,10,10,10,12,16,10,18,10,12,14,22,10].forEach((w,k)=>ws.getColumn(k+1).width=w);
+  LAST.rows.forEach(({r,x},n)=>{
+    const row=ws.getRow(4+n);
+    row.values=[r.name,MODES[r.mode].name,r.kw,r.V,r.L,r.wt,r.way,+r.pct,BREAKERS[r.bt].short,+x.I.toFixed(1),x.wire||"초과",x.by,x.spec,x.ok?"적합":"확인 필요"];
+    row.eachCell(c=>{c.border=bd;c.alignment={horizontal:"center"};});
+    row.getCell(14).fill=fill(x.ok?"FFDFF3E3":"FFFBDADA");row.getCell(11).font={bold:true};
+  });
+}
+async function exportBatch(){
+  if(typeof ExcelJS==="undefined"){alert("엑셀 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하세요.");return;}
+  const wb=new ExcelJS.Workbook();addBatchSheet(wb);
+  const buf=await wb.xlsx.writeBuffer();
+  await saveXlsx(buf,"회로일괄산정_"+new Date().toISOString().slice(0,10)+".xlsx");
+}
+$("#bxls").onclick=exportBatch;
+
+/* ============ ? 도움말 ============ */
+const HELP=[
+ [/전압강하율/,"허용 전압강하율"],[/보정계수/,"보정계수"],[/^포설|기본 포설/,"포설 방식 (B1, E)"],
+ [/역률/,"역률 cosφ"],[/^여유율/,"여유율"],[/^부하전류/,"부하전류 IB"],[/^단락전류/,"단락전류 Isc"],[/^%Z/,"%Z (퍼센트 임피던스)"],
+ [/선간전압|대지전압|상전압|전압\(선간\)/,"선간전압 / 상전압 / 대지전압"],
+ [/^기동 방식/,"기동 방식"],[/^기동전류/,"기동전류"],[/^전선 계수/,"전선 계수 (전동기)"],[/순시 동작/,"순시 동작"]
+];
+document.querySelectorAll("label").forEach(l=>{
+  const txt=l.textContent.trim(),h=HELP.find(x=>x[0].test(txt));
+  if(h)l.insertAdjacentHTML("beforeend",` <button type="button" class="hq" data-t="${h[1]}" aria-label="${h[1]} 설명">?</button>`);
+});
+const pop=document.createElement("div");pop.id="hqpop";document.body.appendChild(pop);
+function openTerm(name){
+  const pb=document.querySelector('.tg[data-pg=pg3]');pb.setAttribute("aria-expanded","true");$("#pg3").classList.add("on");
+  const gb=document.querySelector('.tg[data-gs=gt]');gb.setAttribute("aria-expanded","true");$("#gt").style.display="";
+  $("#gq").value=name;renderTerms();
+  const d=[...document.querySelectorAll("#gtl details")].find(x=>x.querySelector("summary").textContent.startsWith(name));
+  if(d){d.open=true;d.scrollIntoView({behavior:"smooth",block:"center"});}
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".hq");
+  if(b){
+    e.preventDefault();e.stopPropagation();
+    const t=TERMS.find(x=>x[0]==b.dataset.t);if(!t)return;
+    pop.innerHTML=`<b>${t[0]}</b><div>${t[1]}</div><a href="#" data-go="${t[0]}">용어 페이지에서 자세히 보기 →</a>`;
+    const r=b.getBoundingClientRect();
+    pop.style.left=Math.max(8,Math.min(r.left+scrollX,innerWidth-320))+"px";
+    pop.style.top=(r.bottom+scrollY+6)+"px";
+    pop.classList.add("on");return;
+  }
+  const go=e.target.closest("[data-go]");
+  if(go){e.preventDefault();openTerm(go.dataset.go);pop.classList.remove("on");return;}
+  if(!e.target.closest("#hqpop"))pop.classList.remove("on");
+});
+
+/* 페이지 토글 */
+document.querySelectorAll(".tg[data-pg]").forEach(b=>b.onclick=()=>{
+  const on=b.getAttribute("aria-expanded")!="true";
+  b.setAttribute("aria-expanded",on);
+  $("#"+b.dataset.pg).classList.toggle("on",on);
+});
+document.querySelectorAll(".tg[data-gs]").forEach(b=>b.onclick=()=>{
+  const on=b.getAttribute("aria-expanded")!="true";
+  b.setAttribute("aria-expanded",on);
+  $("#"+b.dataset.gs).style.display=on?"":"none";
+});
+
+function refresh(){
+  MODES.forEach((_,i)=>render(i));renderSum();
+  sec1();sec2();sec3();sec4();bRender();batchCalc();
+}
+document.addEventListener("input",e=>{ if(e.target.id=="s1t")fillWays(); refresh();});
+document.addEventListener("change",e=>{ if(e.target.id=="s1t")fillWays(); refresh();});
+
+/* ---------- 인쇄 / 내보내기 ---------- */
+$("#pbtn").onclick=e=>{e.stopPropagation();$("#pmenu").classList.toggle("on");};
+document.addEventListener("click",()=>$("#pmenu").classList.remove("on"));
+/* 알림: alert가 막힌 보기(claude.ai 아티팩트 등)에서도 보이도록 화면 안 안내로 대체 */
+function toast(msg){
+  const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),5000);
+}
+window.alert=toast;
+const inViewer=()=>typeof window.claude!=="undefined"&&typeof window.claude.use==="function";
+/* 엑셀 저장: 아티팩트 보기에서는 downloads 기능, 일반 파일에서는 직접 다운로드 */
+async function saveXlsx(buf,name){
+  let dl=null;
+  if(inViewer()){try{dl=await window.claude.use("downloads");}catch(e){dl=null;}}
+  if(dl){
+    try{await dl.save({filename:name,data:buf});toast("저장 요청을 보냈습니다: "+name);}
+    catch(e){if(!e||e.code!="declined")toast("이 보기에서는 파일을 저장할 수 없습니다.");}
+    return;
+  }
+  if(inViewer()){toast("이 보기에서는 파일을 저장할 수 없습니다. PC에 저장한 wire-calc.html에서 저장하세요.");return;}
+  const url=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  const a=document.createElement("a");a.href=url;a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+$("#doPdf").onclick=()=>{
+  $("#pmenu").classList.remove("on");
+  if(inViewer()){toast("이 보기에서는 인쇄 창을 열 수 없습니다. PC에 저장한 wire-calc.html에서 'PDF로 인쇄'를 사용하세요.");return;}
+  setTimeout(()=>window.print(),50);
+};
+$("#doXls").onclick=()=>{$("#pmenu").classList.remove("on");exportXlsx();};
+
+async function exportXlsx(){
+  if(typeof ExcelJS==="undefined"){alert("엑셀 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하세요.");return;}
+  refresh();
+  const wb=new ExcelJS.Workbook();
+  const thin={style:"thin",color:{argb:"FFBBBBBB"}};
+  const bd={top:thin,left:thin,bottom:thin,right:thin};
+  const fill=c=>({type:"pattern",pattern:"solid",fgColor:{argb:c}});
+  const title=(ws,text,cols,color)=>{
+    ws.mergeCells(1,1,1,cols);
+    const c=ws.getCell(1,1);c.value=text;
+    c.font={bold:true,size:14,color:{argb:"FFFFFFFF"}};c.fill=fill(color);c.alignment={vertical:"middle"};
+    ws.getRow(1).height=28;
+  };
+  const headRow=(ws,r,arr,c1=1)=>{
+    arr.forEach((t,k)=>{const c=ws.getCell(r,c1+k);c.value=t;c.font={bold:true};c.fill=fill("FFEEF1F6");c.alignment={horizontal:"center"};c.border=bd;});
+  };
+  const today=new Date().toLocaleDateString("ko-KR");
+  /* PDF 인쇄와 같은 조건: 열려 있는 페이지의 선택한 결선만 내보냄 */
+  const open=id=>$("#"+id).classList.contains("on");
+  const selW=[...document.querySelectorAll("#modes .mode")].findIndex(b=>b.classList.contains("on"));
+  const selB=[...document.querySelectorAll("#bmodes .mode")].findIndex(b=>b.classList.contains("on"));
+  if(!open("pg1")&&!open("pg2")&&!open("pgb")){alert("내보낼 페이지(①, ②, ③)를 먼저 열어 주세요.");return;}
+
+  if(open("pg1")){
+  /* 요약 */
+  const ws=wb.addWorksheet("요약");
+  title(ws,"전선 굵기 산정서 · "+today,9,"FF185FA5");
+  headRow(ws,3,["결선","전류(A)","거리(m)","전압(V)","허용강하율(%)","계산값(mm²)","선정(mm²)","실제강하율(%)","판정"]);
+  const sumW=[14,10,10,10,14,13,12,14,16];
+  sumW.forEach((w,k)=>ws.getColumn(k+1).width=w);
+  [selW].forEach((i,n)=>{
+    const m=MODES[i];
+    const {V,I,L,pct}=vals(i),r=calc(m,V,I,L,pct);
+    const row=ws.getRow(4+n);
+    const ok=r.sel&&r.pAct<=pct+1e-9;
+    row.values=[m.name,I,L,V,pct,+r.need.toFixed(2),r.sel||"초과",r.sel?+r.pAct.toFixed(2):"-",ok?"적합":"규격 초과"];
+    row.eachCell(c=>{c.border=bd;c.alignment={horizontal:"center"};});
+    row.getCell(1).font={bold:true,color:{argb:m.hex}};
+    row.getCell(7).font={bold:true};
+    row.getCell(9).fill=fill(ok?"FFDFF3E3":"FFFBDADA");
+  });
+  ws.getCell(9,1).value="※ 전압강하 기준 계산 결과입니다. 허용전류는 '허용전류검토' 시트를 확인하세요.";
+  ws.getCell(9,1).font={italic:true,color:{argb:"FF667085"}};
+
+  /* 결선별 시트 (수식 포함) */
+  [selW].forEach(i=>{
+    const m=MODES[i];
+    const {V,I,L,pct}=vals(i),r=calc(m,V,I,L,pct);
+    const w=wb.addWorksheet(m.name);
+    title(w,m.name+" 전선 굵기 산정  ("+m.f+")",4,m.hex);
+    w.getColumn(1).width=26;w.getColumn(2).width=16;w.getColumn(3).width=4;w.getColumn(4).width=22;w.getColumn(6).width=10;
+    const inp=[["전류 I (A)",I],["거리 L (m)",L],["전압 V (V)",V],["허용 전압강하율 (%)",pct],["계수 K",m.K]];
+    inp.forEach((a,k)=>{
+      const row=3+k;
+      const c1=w.getCell(row,1),c2=w.getCell(row,2);
+      c1.value=a[0];c2.value=a[1];c1.border=bd;c2.border=bd;
+      c2.fill=fill("FFFFF8DC");c2.font={color:{argb:"FF0000FF"},bold:true};c2.alignment={horizontal:"right"};
+    });
+    w.getCell(8,1).value="(노란 칸 = 입력, 값을 바꾸면 아래 결과가 다시 계산됩니다)";
+    w.getCell(8,1).font={italic:true,size:9,color:{argb:"FF667085"}};
+    w.getCell(1,6).value="표준 규격";w.getCell(1,6).font={bold:true};
+    SIZES.forEach((s,k)=>w.getCell(2+k,6).value=s);
+    const lastS=1+SIZES.length;
+    const res=[
+      ["허용 전압강하 e (V)",{formula:"B5*B6/100",result:r.e}],
+      ["필요 단면적 A (mm²)",{formula:"B7*B4*B3/(1000*B10)",result:r.need}],
+      ["선정 규격 (mm²)",{formula:`IFERROR(INDEX(F2:F${lastS},MATCH(TRUE,INDEX(F2:F${lastS}>=B11,0),0)),"초과")`,result:r.sel||"초과"}],
+      ["실제 전압강하 (V)",{formula:'IF(ISNUMBER(B12),B7*B4*B3/(1000*B12),"-")',result:r.sel?r.eAct:"-"}],
+      ["실제 강하율 (%)",{formula:'IF(ISNUMBER(B12),B13/B5*100,"-")',result:r.sel?r.pAct:"-"}]
+    ];
+    res.forEach((a,k)=>{
+      const row=10+k;
+      const c1=w.getCell(row,1),c2=w.getCell(row,2);
+      c1.value=a[0];c2.value=a[1];c1.border=bd;c2.border=bd;c1.fill=fill("FFEEF1F6");
+      c2.numFmt="0.00";c2.alignment={horizontal:"right"};
+    });
+    w.getCell(12,2).font={bold:true,size:12};w.getCell(12,2).fill=fill("FFDFF3E3");
+    /* 변화표 */
+    w.getCell(17,1).value="전류·거리 변화에 따른 선정 규격 (mm²)";w.getCell(17,1).font={bold:true};
+    const s=sens(m,V,I,L,pct);
+    headRow(w,18,["거리＼전류",...s.f.map(f=>fmt(I*f,1)+" A")]);
+    s.f.forEach((a,ri)=>{
+      const row=19+ri;
+      const c=w.getCell(row,1);c.value=fmt(L*a,1)+" m";c.font={bold:true};c.fill=fill("FFEEF1F6");c.border=bd;
+      s.rows[ri].forEach((v,ci)=>{
+        const cc=w.getCell(row,2+ci);cc.value=v||"초과";cc.border=bd;cc.alignment={horizontal:"center"};
+        if(a==1&&s.f[ci]==1){cc.fill=fill(m.hex);cc.font={bold:true,color:{argb:"FFFFFFFF"}};}
+      });
+    });
+    [3,4,5,6].forEach(k=>{if(k>3&&w.getColumn(k+0).width<12)w.getColumn(k).width=12;});
+    w.getColumn(3).width=14;w.getColumn(4).width=14;w.getColumn(5).width=14;
+  });
+
+  /* 허용전류 검토 */
+  const a=wb.addWorksheet("허용전류검토");
+  title(a,"허용전류 검토 · "+today,5,"FF7C3AED");
+  const S=LAST.s1,S2=LAST.s2,S3=LAST.s3;
+  a.getColumn(1).width=26;a.getColumn(2).width=18;a.getColumn(3).width=18;a.getColumn(4).width=18;a.getColumn(5).width=18;
+  const info=[
+    ["결선 방식",MODES[S.i].name],["전선 종류",S.type],["포설 방식",S.way],["보정계수",S.k],
+    ["전류 I (A)",S.I],["거리 L (m)",S.L],
+    ["전압강하 기준 규격 (mm²)",S.vd||"초과"],["허용전류 기준 규격 (mm²)",S.amp||"표 범위 초과"],
+    ["최종 규격 (mm²)",S.fin||"-"]
+  ];
+  info.forEach((x,k)=>{
+    const c1=a.getCell(3+k,1),c2=a.getCell(3+k,2);c1.value=x[0];c2.value=x[1];
+    c1.border=bd;c2.border=bd;c1.fill=fill("FFEEF1F6");c2.alignment={horizontal:"right"};
+  });
+  a.getCell(11,2).font={bold:true,size:12};a.getCell(11,2).fill=fill("FFDFF3E3");
+  /* 역방향 / 부하 */
+  a.getCell(13,1).value="역방향 계산";a.getCell(13,1).font={bold:true};
+  [["규격 (mm²)",S2.A],["거리 (m)",S2.L],["최대 전류-전압강하 (A)",+S2.imaxVd.toFixed(1)],["최대 전류-허용전류 (A)",+S2.imaxAmp.toFixed(1)],["최대 전류-최종 (A)",+S2.imax.toFixed(1)],["최대 허용 거리 (m)",+S2.lmax.toFixed(1)]]
+   .forEach((x,k)=>{const c1=a.getCell(14+k,1),c2=a.getCell(14+k,2);c1.value=x[0];c2.value=x[1];c1.border=bd;c2.border=bd;c1.fill=fill("FFEEF1F6");});
+  a.getCell(21,1).value="부하 전류 계산";a.getCell(21,1).font={bold:true};
+  [["결선 방식",MODES[S3.i].name],["부하 (kW)",S3.P],["역률",S3.pf],["효율",S3.eta],["계산 전류 (A)",+S3.I.toFixed(1)]]
+   .forEach((x,k)=>{const c1=a.getCell(22+k,1),c2=a.getCell(22+k,2);c1.value=x[0];c2.value=x[1];c1.border=bd;c2.border=bd;c1.fill=fill("FFEEF1F6");});
+  /* 사용한 허용전류표 */
+  a.getCell(3,4).value="사용한 허용전류표";a.getCell(3,4).font={bold:true};
+  headRow(a,4,["규격(mm²)","허용전류(A)"],4);
+  const t=ampTable();
+  Object.keys(t).forEach((sz,k)=>{
+    const c1=a.getCell(5+k,4),c2=a.getCell(5+k,5);c1.value=+sz;c2.value=t[sz];
+    c1.border=bd;c2.border=bd;c1.alignment={horizontal:"center"};c2.alignment={horizontal:"center"};
+  });
+
+  }
+  /* 차단기 */
+  if(open("pg2")){
+  const bs=wb.addWorksheet("차단기");
+  title(bs,"차단기 용량 산정 · "+today,9,"FF0F766E");
+  headRow(bs,3,["결선","종류","극수","부하전류 IB(A)","필요 In(A)","선정 차단기","단락전류(kA)","선정 Icu(kA)","전선 협조"]);
+  [14,10,8,16,14,22,14,14,12].forEach((x,k)=>bs.getColumn(k+1).width=x);
+  LAST.b.filter(r=>r.i==selB).forEach((r,k)=>{
+    const row=bs.getRow(4+k);
+    row.values=[MODES[r.i].name,r.type,r.pole,+r.IB.toFixed(1),+r.need.toFixed(1),r.spec,isFinite(r.Isc)?+r.Isc.toFixed(2):"-",r.Icu||(isFinite(r.Isc)?"초과":"-"),r.coord==null?"-":r.coord?"적합":"부적합"];
+    row.eachCell(c=>{c.border=bd;c.alignment={horizontal:"center"};});
+    row.getCell(1).font={bold:true,color:{argb:MODES[r.i].hex}};row.getCell(6).font={bold:true};
+    if(r.coord!=null)row.getCell(9).fill=fill(r.coord?"FFDFF3E3":"FFFBDADA");
+  });
+  }
+  if(open("pgb"))addBatchSheet(wb);
+
+  const buf=await wb.xlsx.writeBuffer();
+  await saveXlsx(buf,"전선굵기산정서_"+new Date().toISOString().slice(0,10)+".xlsx");
+}
+
+show(0);bshow(0);refresh();
+</script>
+</body>
+</html>
