@@ -1,5 +1,5 @@
-/* 굵직이 서비스 워커: 화면과 엑셀 라이브러리를 폰에 저장해 오프라인에서도 열리게 함 */
-const VER = "gulgigi-v2";
+/* Wire Wise 서비스 워커: 화면과 엑셀 라이브러리를 폰에 저장해 오프라인에서도 열리게 함 */
+const VER = "wirewise-v3";
 const SHELL = [
   "wire-calc.html",
   "manifest.webmanifest",

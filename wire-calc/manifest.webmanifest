@@ -1,6 +1,6 @@
 {
-  "name": "굵직이 - 차단기 내려가기 전에 계산하자",
-  "short_name": "굵직이",
+  "name": "Wire Wise - 차단기 내려가기 전에 계산하자",
+  "short_name": "Wire Wise",
   "description": "전선 굵기, 차단기 용량, 회로 일괄 산정을 폰에서 바로 계산하는 전기설비 계산기",
   "lang": "ko",
   "start_url": "wire-calc.html",

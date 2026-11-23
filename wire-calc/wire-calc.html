@@ -7,13 +7,13 @@
 <meta name="theme-color" content="#1e3a8a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="굵직이">
+<meta name="apple-mobile-web-app-title" content="Wire Wise">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="굵직이: 전선 굵기, 차단기 용량, 회로 일괄 산정 계산기">
+<meta name="description" content="Wire Wise: 전선 굵기, 차단기 용량, 회로 일괄 산정 계산기">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
-<title>굵직이 전선계산기</title>
+<title>Wire Wise 전선계산기</title>
 <script src="vendor/exceljs.min.js"></script>
 <style>
 :root{
@@ -237,7 +237,7 @@ label.sw input:checked::after{left:19px}
     <div class="brand">
       <img src="icons/icon-192.png" alt="" width="48" height="48">
       <div>
-        <h1>굵직이</h1>
+        <h1>Wire Wise</h1>
         <div class="sub">차단기 내려가기 전에 계산하자<span class="x"> · 전선 굵기·차단기 계산기</span></div>
       </div>
     </div>
@@ -248,7 +248,7 @@ label.sw input:checked::after{left:19px}
         <button id="doXls">엑셀(.xlsx) 저장</button>
         <button id="shXls">엑셀 파일 공유</button>
         <button id="shTxt">결과 요약 공유</button>
-        <button id="shApp">굵직이 친구에게 소개</button>
+        <button id="shApp">Wire Wise 친구에게 소개</button>
         <button id="doInst">홈 화면에 앱으로 설치</button>
       </div>
     </div>
@@ -1007,7 +1007,7 @@ function selIndex(sel){return [...document.querySelectorAll(sel+" .mode")].findI
 function summaryText(){
   refresh();
   const open=id=>$("#"+id).classList.contains("on");
-  const out=["[굵직이 계산 결과] "+new Date().toLocaleDateString("ko-KR")];
+  const out=["[Wire Wise 계산 결과] "+new Date().toLocaleDateString("ko-KR")];
   if(open("pg1")){
     const i=selIndex("#modes"),m=MODES[i],{V,I,L,pct}=vals(i),r=calc(m,V,I,L,pct);
     out.push("","■ 전선 굵기 · "+m.name,`전류 ${fmt(I,1)}A / 거리 ${fmt(L,1)}m / 전압 ${V}V / 강하율 ${pct}%`,
@@ -1031,16 +1031,16 @@ function summaryText(){
 function shareSummary(){
   const t=summaryText();
   if(!t){toast("공유할 계산 페이지(전선, 차단기, 일괄)를 먼저 열어 주세요.");return;}
-  shareText("굵직이 계산 결과",t,SHARE_URL);
+  shareText("Wire Wise 계산 결과",t,SHARE_URL);
 }
 function shareApp(){
-  shareText("굵직이","차단기 내려가기 전에 계산하자! 전선 굵기와 차단기 용량을 폰에서 바로 계산하는 굵직이","" +SHARE_URL);
+  shareText("Wire Wise","차단기 내려가기 전에 계산하자! 전선 굵기와 차단기 용량을 폰에서 바로 계산하는 Wire Wise","" +SHARE_URL);
 }
 async function shareXlsx(){
   const r=await buildXlsx();if(!r)return;
   const file=new File([r.buf],r.name,{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
-    try{await navigator.share({files:[file],title:"굵직이 산정서"});}
+    try{await navigator.share({files:[file],title:"Wire Wise 산정서"});}
     catch(e){if(e&&e.name!=="AbortError")toast("파일을 공유하지 못했습니다.");}
     return;
   }
@@ -1204,7 +1204,7 @@ async function buildXlsx(){
   if(open("pgb"))addBatchSheet(wb);
 
   const buf=await wb.xlsx.writeBuffer();
-  return {buf,name:"굵직이_산정서_"+new Date().toISOString().slice(0,10)+".xlsx"};
+  return {buf,name:"WireWise_산정서_"+new Date().toISOString().slice(0,10)+".xlsx"};
 }
 
 show(0);bshow(0);refresh();
