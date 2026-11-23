@@ -4,8 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
-<title>전선 굵기 산정기</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<meta name="theme-color" content="#1e3a8a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="굵직이">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="굵직이: 전선 굵기, 차단기 용량, 회로 일괄 산정 계산기">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>굵직이 전선계산기</title>
+<script src="vendor/exceljs.min.js"></script>
 <style>
 :root{
   --bg:#f4f6fa;--card:#fff;--text:#1b2433;--sub:#667085;--line:#e3e7ee;
@@ -115,7 +124,103 @@ label.sw input:checked::after{left:19px}
 #btbl td.chg{background:#2563eb26}
 #btbl .del{border:0;background:transparent;color:var(--sub);cursor:pointer;font-size:1rem}
 #btbl .rw small{display:block;color:var(--sub);font-size:.72rem}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand img{border-radius:12px;flex:none}
+.brand h1{margin:0}
+.brand .sub{margin-bottom:0}
+.tg .sh{display:none}
+.menu button.hide{display:none}
 @media(max-width:560px){.modes{grid-template-columns:repeat(2,1fr)}.top{flex-wrap:wrap}}
+
+/* ===== 스마트폰 화면 최적화 ===== */
+@media screen and (max-width:600px){
+  body{font-size:15px}
+  .wrap{padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  .top{flex-wrap:nowrap;align-items:center;gap:8px;margin-bottom:14px}
+  .brand img{width:40px;height:40px}
+  h1{font-size:1.3rem}
+  .sub{font-size:.76rem;margin-bottom:0;line-height:1.35}
+  .brand .sub .x{display:none}
+  .pbtn{padding:10px 12px;font-size:.85rem;min-height:44px;white-space:nowrap}
+  /* 하단 탭 바 */
+  .pnav{position:fixed;left:0;right:0;bottom:0;z-index:30;margin:0;gap:4px;background:var(--card);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-right,0px))}
+  .pnav .tg{min-width:0;flex:1;justify-content:center;border:0;border-radius:12px;padding:10px 2px;font-size:.85rem;min-height:48px;text-align:center}
+  .pnav .tg::after{display:none}
+  .pnav .tg .lg{display:none}
+  .pnav .tg .sh{display:inline}
+  .pnav .tg[aria-expanded=false]{background:transparent;color:var(--sub)}
+  /* 입력과 결과 */
+  .panel,.sec{padding:14px;border-radius:14px}
+  .sec{margin-top:16px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .field input,.field select{font-size:16px;padding:12px 10px;min-height:48px;text-overflow:ellipsis}
+  .field span{padding:0 8px;font-size:.8rem}
+  label{font-size:.8rem}
+  .result{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .box{padding:10px 12px}
+  .box.main{grid-column:1/-1}
+  .box .v{font-size:1.2rem;overflow-wrap:anywhere}
+  .formula{font-size:.8rem;padding:8px 10px}
+  .mode{padding:10px 4px}
+  .mode:hover{transform:none}
+  .mode b{font-size:.9rem}
+  table{min-width:0;font-size:.78rem}
+  th,td{padding:5px 4px}
+  .hq{width:26px;height:26px;line-height:24px;font-size:13px}
+  .apply{min-height:46px;width:100%}
+  .tg.s{min-height:44px}
+  .gsearch{font-size:16px}
+  /* 내보내기 메뉴는 아래에서 올라오는 시트 */
+  .menu{position:fixed;left:0;right:0;top:auto;bottom:0;min-width:0;border-radius:16px 16px 0 0;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:40;box-shadow:0 -8px 24px #0004}
+  .menu button{padding:16px 18px;font-size:1rem;border-bottom:1px solid var(--line)}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+}
+/* ===== 폴더블 안쪽 화면·태블릿 폭 (641~1100px): 폰보다 넓게, PC보다 터치 친화적으로 ===== */
+@media screen and (min-width:601px) and (max-width:1100px){
+  .wrap{max-width:none;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+  .pnav .tg{min-height:52px}
+  .grid{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+  .result{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .modes{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .sec,.panel{padding:20px 22px}
+}
+/* 일괄 산정 표는 1100px 이하에서 카드로 바꿔 가로 스크롤을 없앰 */
+@media screen and (max-width:1100px){
+  #btbl{min-width:0!important;display:block}
+  #btbl tbody{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  #btbl tr:not([data-k]){display:none}
+  #btbl tr[data-k]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg);align-content:start}
+  #btbl td{display:block;border:0;padding:0;white-space:normal;text-align:left}
+  #btbl td[data-label]::before{content:attr(data-label);display:block;font-size:.72rem;color:var(--sub);margin-bottom:2px}
+  #btbl td.full{grid-column:1/-1}
+  #btbl td.chg{background:transparent}
+  #btbl td.chg::before{color:var(--c1);font-weight:700}
+  #btbl input,#btbl select{font-size:16px;min-height:44px;min-width:0}
+  #btbl .del{min-height:44px;width:100%;border:1px solid var(--line);border-radius:8px}
+}
+/* 터치 화면 공통: 누르기 쉬운 크기 */
+@media (pointer:coarse){
+  .field input,.field select{min-height:48px}
+  .pbtn,.apply,.tg,.menu button{min-height:46px}
+  .hq{width:26px;height:26px;line-height:24px}
+}
+/* 높이가 낮은 겉화면 (폴드8 일반형 커버처럼 10:16 비율, 높이 약 640~780px) */
+@media screen and (max-width:600px) and (max-height:760px){
+  .wrap{padding-top:calc(8px + env(safe-area-inset-top,0px));padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  .top{margin-bottom:10px}
+  .brand img{width:34px;height:34px}
+  .brand .sub{display:none}
+  .pnav .tg{min-height:42px;padding:6px 2px}
+  .pnav{padding-top:4px}
+  .toast{bottom:calc(66px + env(safe-area-inset-bottom,0px))}
+}
+/* 아주 좁은 겉화면 (폴더블을 접었을 때 등) */
+@media screen and (max-width:360px){
+  .grid,.result{grid-template-columns:minmax(0,1fr)}
+  .brand h1{font-size:1.15rem}
+  .pbtn{padding:10px 8px;font-size:.8rem}
+}
+@page{size:A4;margin:12mm}
 @media print{
   body{background:#fff;color:#000}
   .pm,.modes,.apply,.pnav,.gtags,.gsearch,.hq,#hqpop,#btbl .del{display:none!important}
@@ -129,24 +234,31 @@ label.sw input:checked::after{left:19px}
 <body>
 <div class="wrap">
   <div class="top">
-    <div>
-      <h1>⚡ 전선 굵기 산정기</h1>
-      <div class="sub">전류(I)와 거리(L)로 전압강하 기준 최소 전선 단면적을 산정합니다. 결선 방식 버튼을 눌러 선택하세요.</div>
+    <div class="brand">
+      <img src="icons/icon-192.png" alt="" width="48" height="48">
+      <div>
+        <h1>굵직이</h1>
+        <div class="sub">차단기 내려가기 전에 계산하자<span class="x"> · 전선 굵기·차단기 계산기</span></div>
+      </div>
     </div>
     <div class="pm">
-      <button class="pbtn" id="pbtn">🖨 인쇄 / 내보내기 ▾</button>
+      <button class="pbtn" id="pbtn" aria-haspopup="true">내보내기 · 공유 ▾</button>
       <div class="menu" id="pmenu">
-        <button id="doPdf">PDF로 인쇄</button>
-        <button id="doXls">엑셀(.xlsx)로 저장</button>
+        <button id="doPdf">PDF로 저장 · 인쇄</button>
+        <button id="doXls">엑셀(.xlsx) 저장</button>
+        <button id="shXls">엑셀 파일 공유</button>
+        <button id="shTxt">결과 요약 공유</button>
+        <button id="shApp">굵직이 친구에게 소개</button>
+        <button id="doInst">홈 화면에 앱으로 설치</button>
       </div>
     </div>
   </div>
 
   <div class="pnav">
-    <button class="tg" data-pg="pg1" aria-expanded="true">① 전선 굵기 산정</button>
-    <button class="tg" data-pg="pg2" aria-expanded="false">② 차단기 용량 산정</button>
-    <button class="tg" data-pg="pgb" aria-expanded="false">③ 회로 일괄 산정</button>
-    <button class="tg" data-pg="pg3" aria-expanded="false">④ 용어 · 공식 · 조건</button>
+    <button class="tg" data-pg="pg1" aria-expanded="true"><span class="lg">① 전선 굵기 산정</span><span class="sh">전선</span></button>
+    <button class="tg" data-pg="pg2" aria-expanded="false"><span class="lg">② 차단기 용량 산정</span><span class="sh">차단기</span></button>
+    <button class="tg" data-pg="pgb" aria-expanded="false"><span class="lg">③ 회로 일괄 산정</span><span class="sh">일괄</span></button>
+    <button class="tg" data-pg="pg3" aria-expanded="false"><span class="lg">④ 용어 · 공식 · 조건</span><span class="sh">용어</span></button>
   </div>
 
   <div class="pg on" id="pg1">
@@ -678,22 +790,22 @@ function newRow(d){
   return Object.assign({name:"회로 "+(BROWS.length+1),mode:1,kw:10,V:380,L:50,wt:$("#bdt").value,way:$("#bdw").value,pct:$("#bdp").value,bt:$("#bdb").value},d||{});
 }
 function renderBRows(){
-  let h="<tr><th>회로명</th><th>결선</th><th>kW</th><th>전압 V</th><th>거리 m</th><th>전선 종류</th><th>포설</th><th>강하율</th><th>차단기 종류</th><th>전류 A</th><th>전선</th><th>차단기</th><th>판정</th><th></th></tr>";
+  let h="<tr><th>회로명</th><th>결선</th><th>kW</th><th>전압 V</th><th>거리 m</th><th>강하율</th><th>전선 종류</th><th>포설</th><th>차단기 종류</th><th>전류 A</th><th>전선</th><th>차단기</th><th>판정</th><th></th></tr>";
   BROWS.forEach((r,k)=>{
     const ways=Object.keys(AMPACITY[r.wt]);
     if(!ways.includes(r.way))r.way=ways[0];
     h+=`<tr data-k="${k}">
-     <td><input data-f="name" value="${r.name}"></td>
-     <td><select data-f="mode">${MODES.map((m,i)=>`<option value="${i}" ${i==r.mode?"selected":""}>${m.name}</option>`).join("")}</select></td>
-     <td><input data-f="kw" type="number" min="0" step="any" value="${r.kw}"></td>
-     <td><input data-f="V" type="number" min="1" step="any" value="${r.V}"></td>
-     <td><input data-f="L" type="number" min="0" step="any" value="${r.L}"></td>
-     <td><select data-f="wt">${optH(Object.keys(AMPACITY),r.wt)}</select></td>
-     <td><select data-f="way">${optH(ways,r.way)}</select></td>
-     <td><select data-f="pct">${optH(["2","3","5","6"],String(r.pct))}</select></td>
-     <td><select data-f="bt">${optH(Object.keys(BREAKERS),r.bt)}</select></td>
-     <td class="rI"></td><td class="rw"></td><td class="rb"></td><td class="rj"></td>
-     <td><button class="del" type="button" data-del="${k}" aria-label="줄 삭제">✕</button></td></tr>`;
+     <td class="full" data-label="회로명"><input data-f="name" value="${r.name}"></td>
+     <td class="full" data-label="결선"><select data-f="mode">${MODES.map((m,i)=>`<option value="${i}" ${i==r.mode?"selected":""}>${m.name}</option>`).join("")}</select></td>
+     <td data-label="부하 kW"><input data-f="kw" type="number" min="0" step="any" value="${r.kw}"></td>
+     <td data-label="전압 V"><input data-f="V" type="number" min="1" step="any" value="${r.V}"></td>
+     <td data-label="거리 m"><input data-f="L" type="number" min="0" step="any" value="${r.L}"></td>
+     <td data-label="강하율"><select data-f="pct">${optH(["2","3","5","6"],String(r.pct))}</select></td>
+     <td data-label="전선 종류"><select data-f="wt">${optH(Object.keys(AMPACITY),r.wt)}</select></td>
+     <td data-label="포설"><select data-f="way">${optH(ways,r.way)}</select></td>
+     <td class="full" data-label="차단기 종류"><select data-f="bt">${optH(Object.keys(BREAKERS),r.bt)}</select></td>
+     <td data-label="전류 A" class="rI"></td><td data-label="전선" class="rw"></td><td data-label="차단기" class="rb"></td><td data-label="판정" class="rj"></td>
+     <td class="full"><button class="del" type="button" data-del="${k}" aria-label="줄 삭제">이 줄 삭제</button></td></tr>`;
   });
   $("#btbl").innerHTML=h;
   batchCalc();
@@ -784,7 +896,7 @@ document.querySelectorAll("label").forEach(l=>{
 });
 const pop=document.createElement("div");pop.id="hqpop";document.body.appendChild(pop);
 function openTerm(name){
-  const pb=document.querySelector('.tg[data-pg=pg3]');pb.setAttribute("aria-expanded","true");$("#pg3").classList.add("on");
+  setPage("pg3",true);
   const gb=document.querySelector('.tg[data-gs=gt]');gb.setAttribute("aria-expanded","true");$("#gt").style.display="";
   $("#gq").value=name;renderTerms();
   const d=[...document.querySelectorAll("#gtl details")].find(x=>x.querySelector("summary").textContent.startsWith(name));
@@ -807,10 +919,27 @@ document.addEventListener("click",e=>{
 });
 
 /* 페이지 토글 */
+const isPhone=()=>window.matchMedia("(max-width:600px)").matches;
+function setPage(id,on){
+  const btns=[...document.querySelectorAll(".tg[data-pg]")];
+  if(on&&isPhone()){ /* 폰에서는 한 번에 한 페이지만 열림 */
+    btns.forEach(x=>{const o=x.dataset.pg==id;x.setAttribute("aria-expanded",o);$("#"+x.dataset.pg).classList.toggle("on",o);});
+    window.scrollTo({top:0});
+    return;
+  }
+  const b=btns.find(x=>x.dataset.pg==id);
+  b.setAttribute("aria-expanded",on);$("#"+id).classList.toggle("on",on);
+}
 document.querySelectorAll(".tg[data-pg]").forEach(b=>b.onclick=()=>{
-  const on=b.getAttribute("aria-expanded")!="true";
-  b.setAttribute("aria-expanded",on);
-  $("#"+b.dataset.pg).classList.toggle("on",on);
+  const open=b.getAttribute("aria-expanded")=="true";
+  if(isPhone()&&open)return;
+  setPage(b.dataset.pg,!open);
+});
+/* 폴더블을 접어 폰 폭이 되면 열린 페이지를 하나만 남김, 펼치면 그대로 유지 */
+window.matchMedia("(max-width:600px)").addEventListener("change",e=>{
+  if(!e.matches)return;
+  const first=[...document.querySelectorAll(".tg[data-pg]")].find(b=>b.getAttribute("aria-expanded")=="true");
+  setPage(first?first.dataset.pg:"pg1",true);
 });
 document.querySelectorAll(".tg[data-gs]").forEach(b=>b.onclick=()=>{
   const on=b.getAttribute("aria-expanded")!="true";
@@ -852,12 +981,88 @@ async function saveXlsx(buf,name){
 $("#doPdf").onclick=()=>{
   $("#pmenu").classList.remove("on");
   if(inViewer()){toast("이 보기에서는 인쇄 창을 열 수 없습니다. PC에 저장한 wire-calc.html에서 'PDF로 인쇄'를 사용하세요.");return;}
-  setTimeout(()=>window.print(),50);
+  if(isPhone())toast("인쇄 화면에서 'PDF로 저장'을 고르면 파일로 저장됩니다.");
+  setTimeout(()=>window.print(),isPhone()?900:50);
 };
 $("#doXls").onclick=()=>{$("#pmenu").classList.remove("on");exportXlsx();};
+$("#shXls").onclick=()=>{$("#pmenu").classList.remove("on");shareXlsx();};
+$("#shTxt").onclick=()=>{$("#pmenu").classList.remove("on");shareSummary();};
+$("#shApp").onclick=()=>{$("#pmenu").classList.remove("on");shareApp();};
 
+/* ---------- 공유 ---------- */
+const SHARE_URL=location.protocol.startsWith("http")?location.origin+location.pathname:"";
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);toast("클립보드에 복사했습니다. 붙여넣기로 보내세요.");}
+  catch(e){toast("공유와 복사를 지원하지 않는 화면입니다.");}
+}
+async function shareText(title,text,url){
+  if(navigator.share){
+    try{await navigator.share(url?{title,text,url}:{title,text});}
+    catch(e){if(e&&e.name!=="AbortError")copyText(text+(url?"\n"+url:""));}
+    return;
+  }
+  copyText(text+(url?"\n"+url:""));
+}
+function selIndex(sel){return [...document.querySelectorAll(sel+" .mode")].findIndex(b=>b.classList.contains("on"));}
+function summaryText(){
+  refresh();
+  const open=id=>$("#"+id).classList.contains("on");
+  const out=["[굵직이 계산 결과] "+new Date().toLocaleDateString("ko-KR")];
+  if(open("pg1")){
+    const i=selIndex("#modes"),m=MODES[i],{V,I,L,pct}=vals(i),r=calc(m,V,I,L,pct);
+    out.push("","■ 전선 굵기 · "+m.name,`전류 ${fmt(I,1)}A / 거리 ${fmt(L,1)}m / 전압 ${V}V / 강하율 ${pct}%`,
+      `→ 계산값 ${fmt(r.need)}mm², 선정 ${r.sel?r.sel+"mm²":"규격 초과"}`+(r.sel?` (실제 강하율 ${fmt(r.pAct)}%)`:""));
+  }
+  if(open("pg2")){
+    const r=LAST.b[selIndex("#bmodes")];
+    out.push("","■ 차단기 · "+MODES[r.i].name,`부하전류 ${fmt(r.IB,1)}A → ${r.spec}`);
+    if(isFinite(r.Isc))out.push(`단락전류 ${fmt(r.Isc,2)}kA → 차단용량 ${r.Icu||"초과"}kA 이상`);
+    if(r.coord!=null)out.push("전선 협조 "+(r.coord?"적합":"부적합"));
+    if(r.motor)out.push(`전동기 기동전류 약 ${fmt(r.Ist,0)}A`);
+  }
+  if(open("pgb")){
+    out.push("","■ 회로 일괄 산정");
+    LAST.rows.forEach(({r,x})=>out.push(`- ${r.name} (${MODES[r.mode].name} ${r.kw}kW ${r.L}m): ${fmt(x.I,1)}A, 전선 ${x.wire||"초과"}mm², ${x.spec}, ${x.ok?"적합":"확인 필요"}`));
+  }
+  if(out.length==1)return "";
+  out.push("","※ 참고용 계산입니다. 설계·시공 전 규정과 제조사 자료로 확인하세요.");
+  return out.join("\n");
+}
+function shareSummary(){
+  const t=summaryText();
+  if(!t){toast("공유할 계산 페이지(전선, 차단기, 일괄)를 먼저 열어 주세요.");return;}
+  shareText("굵직이 계산 결과",t,SHARE_URL);
+}
+function shareApp(){
+  shareText("굵직이","차단기 내려가기 전에 계산하자! 전선 굵기와 차단기 용량을 폰에서 바로 계산하는 굵직이","" +SHARE_URL);
+}
+async function shareXlsx(){
+  const r=await buildXlsx();if(!r)return;
+  const file=new File([r.buf],r.name,{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:"굵직이 산정서"});}
+    catch(e){if(e&&e.name!=="AbortError")toast("파일을 공유하지 못했습니다.");}
+    return;
+  }
+  toast("이 기기는 파일 공유를 지원하지 않아 저장으로 대신합니다.");
+  await saveXlsx(r.buf,r.name);
+}
 async function exportXlsx(){
-  if(typeof ExcelJS==="undefined"){alert("엑셀 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하세요.");return;}
+  const r=await buildXlsx();if(r)await saveXlsx(r.buf,r.name);
+}
+/* 설치 버튼 */
+let deferredInstall=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;});
+const standalone=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+if(standalone)$("#doInst").classList.add("hide");
+$("#doInst").onclick=async()=>{
+  $("#pmenu").classList.remove("on");
+  if(deferredInstall){deferredInstall.prompt();deferredInstall=null;return;}
+  toast("브라우저 메뉴에서 '홈 화면에 추가'를 고르세요. 아이폰은 사파리 공유 버튼 → 홈 화면에 추가입니다.");
+};
+
+async function buildXlsx(){
+  if(typeof ExcelJS==="undefined"){alert("엑셀 라이브러리를 불러오지 못했습니다. 잠시 후 다시 시도하세요.");return null;}
   refresh();
   const wb=new ExcelJS.Workbook();
   const thin={style:"thin",color:{argb:"FFBBBBBB"}};
@@ -877,7 +1082,7 @@ async function exportXlsx(){
   const open=id=>$("#"+id).classList.contains("on");
   const selW=[...document.querySelectorAll("#modes .mode")].findIndex(b=>b.classList.contains("on"));
   const selB=[...document.querySelectorAll("#bmodes .mode")].findIndex(b=>b.classList.contains("on"));
-  if(!open("pg1")&&!open("pg2")&&!open("pgb")){alert("내보낼 페이지(①, ②, ③)를 먼저 열어 주세요.");return;}
+  if(!open("pg1")&&!open("pg2")&&!open("pgb")){alert("내보낼 페이지(전선, 차단기, 일괄)를 먼저 열어 주세요.");return null;}
 
   if(open("pg1")){
   /* 요약 */
@@ -999,10 +1204,14 @@ async function exportXlsx(){
   if(open("pgb"))addBatchSheet(wb);
 
   const buf=await wb.xlsx.writeBuffer();
-  await saveXlsx(buf,"전선굵기산정서_"+new Date().toISOString().slice(0,10)+".xlsx");
+  return {buf,name:"굵직이_산정서_"+new Date().toISOString().slice(0,10)+".xlsx"};
 }
 
 show(0);bshow(0);refresh();
+/* 오프라인 사용을 위한 서비스 워커 (웹 주소에서만 등록) */
+if("serviceWorker" in navigator&&location.protocol.startsWith("http")&&!inViewer()){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
 </script>
 </body>
 </html>

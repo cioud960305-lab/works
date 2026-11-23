@@ -1,0 +1,17 @@
+{
+  "name": "굵직이 - 차단기 내려가기 전에 계산하자",
+  "short_name": "굵직이",
+  "description": "전선 굵기, 차단기 용량, 회로 일괄 산정을 폰에서 바로 계산하는 전기설비 계산기",
+  "lang": "ko",
+  "start_url": "wire-calc.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
